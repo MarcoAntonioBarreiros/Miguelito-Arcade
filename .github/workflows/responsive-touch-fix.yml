@@ -1,0 +1,468 @@
+name: Apply responsive and touch controls fix
+
+on:
+  push:
+    paths:
+      - '.github/workflows/responsive-touch-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-index:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Patch index.html
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('index.html')
+          source = path.read_text(encoding='utf-8')
+
+          new_style = r'''<style>
+        :root {
+            color-scheme: dark;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            min-height: 100%;
+            overflow: hidden;
+            overscroll-behavior: none;
+            background: #000;
+        }
+
+        body {
+            position: fixed;
+            inset: 0;
+            color: white;
+            font-family: sans-serif;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        canvas {
+            position: absolute;
+            inset: 0;
+            display: block;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+            background: #000;
+            touch-action: none;
+        }
+
+        .instrucoes {
+            position: absolute;
+            bottom: max(14px, env(safe-area-inset-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: calc(100vw - 150px);
+            background: rgba(0, 0, 0, 0.62);
+            padding: 8px 14px;
+            border-radius: 16px;
+            font-size: 13px;
+            line-height: 1.25;
+            text-align: center;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .controles-touch {
+            position: absolute;
+            left: max(18px, env(safe-area-inset-left));
+            right: max(18px, env(safe-area-inset-right));
+            bottom: max(18px, env(safe-area-inset-bottom));
+            display: none;
+            justify-content: space-between;
+            align-items: flex-end;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .direcoes-touch {
+            display: flex;
+            gap: 12px;
+            pointer-events: none;
+        }
+
+        .controle-btn,
+        .btn-fullscreen {
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: #fff;
+            background: rgba(12, 24, 32, 0.55);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+            touch-action: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .controle-btn {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            font-size: 30px;
+            pointer-events: auto;
+        }
+
+        .controle-btn.pular {
+            width: 88px;
+            height: 88px;
+            font-size: 15px;
+            letter-spacing: 0.4px;
+        }
+
+        .controle-btn:active,
+        .controle-btn.ativo {
+            background: rgba(67, 145, 190, 0.78);
+            transform: scale(0.96);
+        }
+
+        .btn-fullscreen {
+            position: absolute;
+            top: max(12px, env(safe-area-inset-top));
+            right: max(12px, env(safe-area-inset-right));
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            font-size: 22px;
+            line-height: 1;
+            z-index: 30;
+        }
+
+        @media (hover: none), (pointer: coarse) {
+            .controles-touch {
+                display: flex;
+            }
+
+            .instrucoes {
+                bottom: calc(116px + env(safe-area-inset-bottom));
+                max-width: calc(100vw - 24px);
+                font-size: 12px;
+            }
+
+            .instrucoes .pc {
+                display: none;
+            }
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .instrucoes .mobile {
+                display: none;
+            }
+        }
+
+        @media (max-width: 430px) {
+            .controle-btn {
+                width: 64px;
+                height: 64px;
+            }
+
+            .controle-btn.pular {
+                width: 78px;
+                height: 78px;
+            }
+        }
+    </style>'''
+
+          source, count = re.subn(r'<style>.*?</style>', new_style, source, count=1, flags=re.S)
+          if count != 1:
+              raise RuntimeError('Não foi possível substituir o bloco CSS.')
+
+          new_body_start = r'''<body>
+
+    <canvas id="jogoCanvas" width="960" height="1080" aria-label="Jogo Miguelito Arcade"></canvas>
+
+    <button id="btnFullscreen" class="btn-fullscreen" type="button" aria-label="Alternar tela cheia" title="Tela cheia">⛶</button>
+
+    <div class="controles-touch" aria-label="Controles do jogo">
+        <div class="direcoes-touch">
+            <button id="btnEsquerda" class="controle-btn" type="button" aria-label="Andar para a esquerda">◀</button>
+            <button id="btnDireita" class="controle-btn" type="button" aria-label="Andar para a direita">▶</button>
+        </div>
+        <button id="btnPular" class="controle-btn pular" type="button" aria-label="Pular">PULAR</button>
+    </div>
+
+    <div class="instrucoes">
+        <span class="mobile"><b>Mobile:</b> segure ◀/▶ e toque em PULAR.</span>
+        <span class="pc"><b>PC:</b> setas para andar e espaço para pular.</span>
+    </div>
+
+    <script>'''
+
+          source, count = re.subn(
+              r'<body>\s*<canvas id="jogoCanvas".*?</div>\s*<script>',
+              new_body_start,
+              source,
+              count=1,
+              flags=re.S,
+          )
+          if count != 1:
+              raise RuntimeError('Não foi possível substituir a abertura do body.')
+
+          responsive_helpers = r'''
+
+        // Mundo lógico com altura fixa. A largura acompanha o formato real da tela.
+        const ALTURA_MUNDO = 1080;
+        let larguraMundo = 960;
+        let escalaTela = 1;
+        let pixelRatio = 1;
+
+        function redimensionarCanvas() {
+            const larguraCss = Math.max(1, document.documentElement.clientWidth || window.innerWidth);
+            const alturaCss = Math.max(
+                1,
+                window.visualViewport ? window.visualViewport.height : (document.documentElement.clientHeight || window.innerHeight)
+            );
+
+            pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+            escalaTela = alturaCss / ALTURA_MUNDO;
+            larguraMundo = larguraCss / escalaTela;
+
+            canvas.style.width = `${larguraCss}px`;
+            canvas.style.height = `${alturaCss}px`;
+            canvas.width = Math.round(larguraCss * pixelRatio);
+            canvas.height = Math.round(alturaCss * pixelRatio);
+        }
+
+        function prepararContexto() {
+            const escalaFinal = pixelRatio * escalaTela;
+            ctx.setTransform(escalaFinal, 0, 0, escalaFinal, 0, 0);
+            ctx.imageSmoothingEnabled = true;
+        }
+'''
+
+          marker = "        const ctx = canvas.getContext('2d');"
+          if marker not in source:
+              raise RuntimeError('Marcador do contexto 2D não encontrado.')
+          source = source.replace(marker, marker + responsive_helpers, 1)
+
+          viewport_runtime = r'''
+        function atualizarViewport() {
+            redimensionarCanvas();
+            nivelDoChao = ALTURA_MUNDO - 60;
+
+            let configAtual = configParado;
+            if (estado === 'andando') configAtual = configAndando;
+            if (estado === 'pulando') configAtual = configPulando;
+            if (estado === 'dano') configAtual = configDano;
+
+            const larguraAtual = configAtual.largura * escala;
+            const alturaAtual = configAtual.altura * escala;
+
+            xPersonagem = Math.max(-50, Math.min(xPersonagem, larguraMundo - larguraAtual + 50));
+            if (noChao) yPersonagem = nivelDoChao - alturaAtual;
+        }
+
+        window.addEventListener('resize', atualizarViewport);
+        window.addEventListener('orientationchange', atualizarViewport);
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', atualizarViewport);
+        }
+        atualizarViewport();
+
+'''
+
+          section3 = "        // ==========================================\n        // 3. SISTEMA DE ITENS E INIMIGOS"
+          if section3 not in source:
+              raise RuntimeError('Marcador da seção 3 não encontrado.')
+          source = source.replace(section3, viewport_runtime + section3, 1)
+
+          controls_section = r'''        // ==========================================
+        // 4. CONTROLES (TECLADO E TOUCH MOBILE)
+        // ==========================================
+        const teclas = { ArrowRight: false, ArrowLeft: false, ArrowUp: false, " ": false };
+
+        // --- Eventos de Teclado (PC) ---
+        window.addEventListener('keydown', (e) => {
+            if (teclas.hasOwnProperty(e.key)) {
+                e.preventDefault();
+                teclas[e.key] = true;
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (teclas.hasOwnProperty(e.key)) {
+                e.preventDefault();
+                teclas[e.key] = false;
+            }
+        });
+
+        // --- Botões touch independentes: permitem andar e pular ao mesmo tempo ---
+        const btnEsquerda = document.getElementById('btnEsquerda');
+        const btnDireita = document.getElementById('btnDireita');
+        const btnPular = document.getElementById('btnPular');
+        const btnFullscreen = document.getElementById('btnFullscreen');
+
+        function manterTeclaPressionada(botao, tecla) {
+            const ponteirosAtivos = new Set();
+
+            botao.addEventListener('pointerdown', (e) => {
+                if (e.pointerType === 'mouse' && e.button !== 0) return;
+                e.preventDefault();
+                ponteirosAtivos.add(e.pointerId);
+                botao.classList.add('ativo');
+                teclas[tecla] = true;
+                if (botao.setPointerCapture) botao.setPointerCapture(e.pointerId);
+            });
+
+            const soltar = (e) => {
+                if (!ponteirosAtivos.has(e.pointerId)) return;
+                e.preventDefault();
+                ponteirosAtivos.delete(e.pointerId);
+                teclas[tecla] = ponteirosAtivos.size > 0;
+                if (ponteirosAtivos.size === 0) botao.classList.remove('ativo');
+            };
+
+            botao.addEventListener('pointerup', soltar);
+            botao.addEventListener('pointercancel', soltar);
+            botao.addEventListener('lostpointercapture', soltar);
+        }
+
+        manterTeclaPressionada(btnEsquerda, 'ArrowLeft');
+        manterTeclaPressionada(btnDireita, 'ArrowRight');
+
+        let temporizadorPulo = null;
+        btnPular.addEventListener('pointerdown', (e) => {
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            e.preventDefault();
+            btnPular.classList.add('ativo');
+            teclas[" "] = true;
+            clearTimeout(temporizadorPulo);
+            temporizadorPulo = setTimeout(() => {
+                teclas[" "] = false;
+                btnPular.classList.remove('ativo');
+            }, 160);
+        });
+
+        const cancelarPuloVisual = () => btnPular.classList.remove('ativo');
+        btnPular.addEventListener('pointerup', cancelarPuloVisual);
+        btnPular.addEventListener('pointercancel', cancelarPuloVisual);
+
+        document.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        btnFullscreen.addEventListener('click', async () => {
+            try {
+                if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
+                    await document.documentElement.requestFullscreen();
+                } else if (document.fullscreenElement && document.exitFullscreen) {
+                    await document.exitFullscreen();
+                }
+            } catch (erro) {
+                console.debug('Tela cheia não disponível neste navegador.', erro);
+            }
+        });
+
+        document.addEventListener('fullscreenchange', () => {
+            btnFullscreen.textContent = document.fullscreenElement ? '×' : '⛶';
+            btnFullscreen.title = document.fullscreenElement ? 'Sair da tela cheia' : 'Tela cheia';
+            setTimeout(atualizarViewport, 50);
+        });
+
+        // ==========================================
+        // 5. LÓGICA DO JOGO (ATUALIZAR)
+        // =========================================='''
+
+          controls_pattern = re.compile(
+              r'        // ==========================================\n'
+              r'        // 4\. CONTROLES \(TECLADO E TOUCH MOBILE\)\n'
+              r'        // ==========================================.*?'
+              r'        // ==========================================\n'
+              r'        // 5\. LÓGICA DO JOGO \(ATUALIZAR\)\n'
+              r'        // ==========================================',
+              flags=re.S,
+          )
+          source, count = controls_pattern.subn(controls_section, source, count=1)
+          if count != 1:
+              raise RuntimeError('Não foi possível substituir a seção de controles.')
+
+          replacements = {
+              'x: canvas.width + 50,': 'x: larguraMundo + 50,',
+              'if (xPersonagem > canvas.width - renderLarguraAtual + 50) xPersonagem = canvas.width - renderLarguraAtual + 50;':
+                  'if (xPersonagem > larguraMundo - renderLarguraAtual + 50) xPersonagem = larguraMundo - renderLarguraAtual + 50;',
+              'if (bac.x <= 20 || bac.x >= canvas.width - larguraRenderizadaBacillus - 20) {':
+                  'if (bac.x <= 20 || bac.x >= larguraMundo - larguraRenderizadaBacillus - 20) {',
+              'if (gota.y > canvas.height + 50) gota.ativa = false;':
+                  'if (gota.y > ALTURA_MUNDO + 50) gota.ativa = false;',
+              'nivelDoChao = canvas.height - 60;': 'nivelDoChao = ALTURA_MUNDO - 60;',
+          }
+
+          for old, new in replacements.items():
+              if old not in source:
+                  raise RuntimeError(f'Trecho esperado não encontrado: {old}')
+              source = source.replace(old, new, 1)
+
+          draw_old = r'''        function desenhar() {
+            ctx.drawImage(imgFundo, 0, 0, canvas.width, canvas.height);'''
+
+          draw_new = r'''        function desenharFundoCover(imagem, larguraDestino, alturaDestino) {
+            const larguraImagem = imagem.naturalWidth || imagem.width;
+            const alturaImagem = imagem.naturalHeight || imagem.height;
+            const proporcaoImagem = larguraImagem / alturaImagem;
+            const proporcaoDestino = larguraDestino / alturaDestino;
+
+            let sx = 0;
+            let sy = 0;
+            let sw = larguraImagem;
+            let sh = alturaImagem;
+
+            if (proporcaoImagem > proporcaoDestino) {
+                sw = alturaImagem * proporcaoDestino;
+                sx = (larguraImagem - sw) / 2;
+            } else {
+                sh = larguraImagem / proporcaoDestino;
+                sy = (alturaImagem - sh) / 2;
+            }
+
+            ctx.drawImage(imagem, sx, sy, sw, sh, 0, 0, larguraDestino, alturaDestino);
+        }
+
+        function desenhar() {
+            prepararContexto();
+            ctx.clearRect(0, 0, larguraMundo, ALTURA_MUNDO);
+            desenharFundoCover(imgFundo, larguraMundo, ALTURA_MUNDO);'''
+
+          if draw_old not in source:
+              raise RuntimeError('Início da função desenhar não encontrado.')
+          source = source.replace(draw_old, draw_new, 1)
+
+          # Confirma que a lógica do jogo não depende mais das dimensões físicas em pixels do canvas.
+          remaining = [line for line in source.splitlines() if 'canvas.width' in line or 'canvas.height' in line]
+          allowed = [line for line in remaining if 'canvas.width = ' in line or 'canvas.height = ' in line]
+          if len(remaining) != len(allowed):
+              raise RuntimeError('Ainda existem usos indevidos de canvas.width/canvas.height: ' + repr(remaining))
+
+          path.write_text(source, encoding='utf-8', newline='\n')
+          PY
+
+      - name: Commit patched game
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Fix fullscreen layout and simultaneous touch controls"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
