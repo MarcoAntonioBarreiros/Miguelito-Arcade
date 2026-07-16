@@ -1,729 +1,796 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Demo da Rizosfera Mobile</title>
-    <style>
-        :root { color-scheme: dark; }
-        * { box-sizing: border-box; }
-
-        html, body {
-            margin: 0;
-            width: 100%;
-            height: 100%;
-            min-height: 100%;
-            overflow: hidden;
-            overscroll-behavior: none;
-            background: #000;
-        }
-
-        body {
-            position: fixed;
-            inset: 0;
-            color: #fff;
-            font-family: sans-serif;
-            touch-action: none;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        canvas {
-            position: absolute;
-            inset: 0;
-            display: block;
-            width: 100vw;
-            height: 100vh;
-            height: 100dvh;
-            border: 0;
-            border-radius: 0;
-            box-shadow: none;
-            background: #000;
-            touch-action: none;
-        }
-
-        .instrucoes {
-            position: absolute;
-            bottom: max(14px, env(safe-area-inset-bottom));
-            left: 50%;
-            transform: translateX(-50%);
-            max-width: calc(100vw - 150px);
-            padding: 8px 14px;
-            border-radius: 16px;
-            background: rgba(0, 0, 0, 0.62);
-            font-size: 13px;
-            line-height: 1.25;
-            text-align: center;
-            z-index: 10;
-            pointer-events: none;
-        }
-
-        .controles-touch {
-            position: absolute;
-            left: max(18px, env(safe-area-inset-left));
-            right: max(18px, env(safe-area-inset-right));
-            bottom: max(18px, env(safe-area-inset-bottom));
-            display: none;
-            justify-content: space-between;
-            align-items: flex-end;
-            z-index: 20;
-            pointer-events: none;
-        }
-
-        .direcoes-touch {
-            display: flex;
-            gap: 12px;
-            pointer-events: none;
-        }
-
-        .controle-btn,
-        .btn-fullscreen {
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            color: #fff;
-            background: rgba(12, 24, 32, 0.55);
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
-            font: inherit;
-            font-weight: 700;
-            cursor: pointer;
-            touch-action: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .controle-btn {
-            width: 72px;
-            height: 72px;
-            border-radius: 50%;
-            font-size: 30px;
-            pointer-events: auto;
-        }
-
-        .controle-btn.pular {
-            width: 88px;
-            height: 88px;
-            font-size: 15px;
-            letter-spacing: 0.4px;
-        }
-
-        .controle-btn:active,
-        .controle-btn.ativo {
-            background: rgba(67, 145, 190, 0.78);
-            transform: scale(0.96);
-        }
-
-        .btn-fullscreen {
-            position: absolute;
-            top: max(12px, env(safe-area-inset-top));
-            right: max(12px, env(safe-area-inset-right));
-            width: 44px;
-            height: 44px;
-            border-radius: 12px;
-            font-size: 22px;
-            line-height: 1;
-            z-index: 30;
-        }
-
-        @media (hover: none), (pointer: coarse) {
-            .controles-touch { display: flex; }
-            .instrucoes {
-                bottom: calc(116px + env(safe-area-inset-bottom));
-                max-width: calc(100vw - 24px);
-                font-size: 12px;
-            }
-            .instrucoes .pc { display: none; }
-        }
-
-        @media (hover: hover) and (pointer: fine) {
-            .instrucoes .mobile { display: none; }
-        }
-
-        @media (max-width: 430px) {
-            .controle-btn { width: 64px; height: 64px; }
-            .controle-btn.pular { width: 78px; height: 78px; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Demo da Rizosfera Mobile</title>
+<style>
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+html, body {
+margin: 0;
+width: 100%;
+height: 100%;
+min-height: 100%;
+overflow: hidden;
+overscroll-behavior: none;
+background: #000;
+}
+body {
+position: fixed;
+inset: 0;
+color: #fff;
+font-family: sans-serif;
+touch-action: none;
+user-select: none;
+-webkit-user-select: none;
+}
+canvas {
+position: absolute;
+inset: 0;
+display: block;
+width: 100vw;
+height: 100vh;
+height: 100dvh;
+border: 0;
+border-radius: 0;
+box-shadow: none;
+background: #000;
+touch-action: none;
+}
+.controles-touch {
+position: absolute;
+left: max(12px, env(safe-area-inset-left));
+right: max(12px, env(safe-area-inset-right));
+bottom: max(12px, env(safe-area-inset-bottom));
+display: none;
+justify-content: space-between;
+align-items: flex-end;
+z-index: 20;
+pointer-events: none;
+}
+.direcoes-touch {
+display: flex;
+gap: 8px;
+pointer-events: none;
+}
+.controle-btn,
+.btn-fullscreen {
+border: 1px solid rgba(255, 255, 255, 0.38);
+color: rgba(255, 255, 255, 0.9);
+background: rgba(8, 18, 25, 0.27);
+box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+backdrop-filter: blur(3px);
+-webkit-backdrop-filter: blur(3px);
+font: inherit;
+font-weight: 700;
+cursor: pointer;
+touch-action: none;
+-webkit-tap-highlight-color: transparent;
+transition: opacity 120ms ease, background 120ms ease, transform 80ms ease;
+}
+.controle-btn {
+width: 58px;
+height: 58px;
+padding: 0;
+border-radius: 50%;
+font-size: 24px;
+line-height: 1;
+opacity: 0.58;
+pointer-events: auto;
+}
+.controle-btn.pular {
+width: 66px;
+height: 66px;
+font-size: 24px;
+}
+.controle-btn:active,
+.controle-btn.ativo {
+opacity: 0.95;
+background: rgba(67, 145, 190, 0.66);
+transform: scale(0.94);
+}
+.btn-fullscreen {
+position: absolute;
+top: max(9px, env(safe-area-inset-top));
+right: max(9px, env(safe-area-inset-right));
+width: 38px;
+height: 38px;
+padding: 0;
+border-radius: 10px;
+font-size: 19px;
+line-height: 1;
+opacity: 0.5;
+z-index: 30;
+}
+.btn-fullscreen:hover,
+.btn-fullscreen:focus-visible {
+opacity: 0.95;
+}
+@media (hover: none), (pointer: coarse) {
+.controles-touch { display: flex; }
+}
+@media (max-width: 430px) {
+.controle-btn { width: 54px; height: 54px; }
+.controle-btn.pular { width: 62px; height: 62px; }
+}
+</style>
 </head>
 <body>
-    <canvas id="jogoCanvas" width="960" height="1080" aria-label="Jogo Miguelito Arcade"></canvas>
-
-    <button id="btnFullscreen" class="btn-fullscreen" type="button" aria-label="Alternar tela cheia" title="Tela cheia">⛶</button>
-
-    <div class="controles-touch" aria-label="Controles do jogo">
-        <div class="direcoes-touch">
-            <button id="btnEsquerda" class="controle-btn" type="button" aria-label="Andar para a esquerda">◀</button>
-            <button id="btnDireita" class="controle-btn" type="button" aria-label="Andar para a direita">▶</button>
-        </div>
-        <button id="btnPular" class="controle-btn pular" type="button" aria-label="Pular">PULAR</button>
-    </div>
-
-    <div class="instrucoes">
-        <span class="mobile"><b>Mobile:</b> segure ◀/▶ e toque em PULAR.</span>
-        <span class="pc"><b>PC:</b> setas para andar e espaço para pular.</span>
-    </div>
-
-    <script>
-        const canvas = document.getElementById('jogoCanvas');
-        const ctx = canvas.getContext('2d');
-
-        const ALTURA_MUNDO = 1080;
-        let larguraMundo = 960;
-        let escalaTela = 1;
-        let pixelRatio = 1;
-
-        function redimensionarCanvas() {
-            const larguraCss = Math.max(1, document.documentElement.clientWidth || window.innerWidth);
-            const alturaCss = Math.max(
-                1,
-                window.visualViewport
-                    ? window.visualViewport.height
-                    : (document.documentElement.clientHeight || window.innerHeight)
-            );
-
-            pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
-            escalaTela = alturaCss / ALTURA_MUNDO;
-            larguraMundo = larguraCss / escalaTela;
-
-            canvas.style.width = `${larguraCss}px`;
-            canvas.style.height = `${alturaCss}px`;
-            canvas.width = Math.round(larguraCss * pixelRatio);
-            canvas.height = Math.round(alturaCss * pixelRatio);
-        }
-
-        function prepararContexto() {
-            const escalaFinal = pixelRatio * escalaTela;
-            ctx.setTransform(escalaFinal, 0, 0, escalaFinal, 0, 0);
-            ctx.imageSmoothingEnabled = true;
-        }
-
-        const imgFundo = new Image();
-        imgFundo.src = 'cenario.jpeg';
-        const imgAndando = new Image();
-        imgAndando.src = 'personagem_sprite.png';
-        const imgParado = new Image();
-        imgParado.src = 'miguelito_idle.png';
-        const imgPulando = new Image();
-        imgPulando.src = 'personagem_jumping.png';
-        const imgInimigo = new Image();
-        imgInimigo.src = 'wormstanding.png';
-        const imgDano = new Image();
-        imgDano.src = 'personagem_dano.png';
-        const imgBacillus = new Image();
-        imgBacillus.src = 'bacillus.png';
-
-        const configAndando = { colunas: 6, largura: 560, altura: 704 };
-        const configParado = { colunas: 6, largura: 589, altura: 740 };
-        const configPulando = { colunas: 4, largura: 588, altura: 628 };
-        const configInimigo = { colunas: 6, largura: 610, altura: 688 };
-        const configDano = { colunas: 7, largura: 416, altura: 740 };
-        const configBacillus = { colunas: 5, largura: 732, altura: 740 };
-
-        const escala = 0.35;
-        const escalaInimigo = 0.20;
-        const escalaBacillus = 0.25;
-        const ajusteYInimigo = 15;
-
-        let xPersonagem = 400;
-        let yPersonagem = 0;
-        let nivelDoChao = 0;
-        let frameAtual = 0;
-        let frameInimigoAtual = 0;
-        let frameBacillusAtual = 0;
-        let estado = 'parado';
-        let viradoParaEsquerda = false;
-        let velocidadeY = 0;
-        const forcaPulo = -18;
-        const gravidade = 0.8;
-        let noChao = true;
-        let isTomandoDano = false;
-        let invulneravel = false;
-        let tempoInvulneravel = 0;
-        const duracaoInvulnerabilidade = 90;
-        let contadorFrames = 0;
-        const velocidadeAnimacao = 5;
-        let contadorFramesBacillus = 0;
-        const velocidadeAnimacaoBacillus = 15;
-        let contadorFramesParado = 0;
-        const velocidadeAnimacaoParado = 12;
-        let tempoPausaIdle = 0;
-
-        function configDoEstadoAtual() {
-            if (estado === 'andando') return configAndando;
-            if (estado === 'pulando') return configPulando;
-            if (estado === 'dano') return configDano;
-            return configParado;
-        }
-
-        function atualizarViewport() {
-            redimensionarCanvas();
-            nivelDoChao = ALTURA_MUNDO - 60;
-            const configAtual = configDoEstadoAtual();
-            const larguraAtual = configAtual.largura * escala;
-            const alturaAtual = configAtual.altura * escala;
-            xPersonagem = Math.max(-50, Math.min(xPersonagem, larguraMundo - larguraAtual + 50));
-            if (noChao) yPersonagem = nivelDoChao - alturaAtual;
-        }
-
-        window.addEventListener('resize', atualizarViewport);
-        window.addEventListener('orientationchange', atualizarViewport);
-        if (window.visualViewport) window.visualViewport.addEventListener('resize', atualizarViewport);
-        atualizarViewport();
-
-        let gotas = [];
-        let miguelitoCarregadoRoxo = false;
-        let patogenos = [];
-        let particulas = [];
-        let intensidadePulsoEscudo = 0;
-        let pgpbs = [];
-
-        function inicializarBacillus() {
-            pgpbs.push({ x: 100, yBase: 180, velocidadeX: 2.5, viradoParaEsquerda: false, tempoParaProximaGota: 120 });
-        }
-
-        function spawnGotaRoxaDoBacillus(origemX, origemY) {
-            gotas.push({ x: origemX, y: origemY, raio: 15, velocidade: 3 + Math.random() * 2, ativa: true });
-        }
-
-        function spawnPatogeno() {
-            const alturaRealInimigo = configInimigo.altura * escalaInimigo;
-            patogenos.push({
-                x: larguraMundo + 50,
-                y: nivelDoChao - alturaRealInimigo - ajusteYInimigo,
-                largura: configInimigo.largura * escalaInimigo,
-                altura: alturaRealInimigo,
-                velocidade: -1.5 - Math.random() * 1.5,
-                ativa: true
-            });
-        }
-
-        function gerarExplosao(x, y, cor) {
-            for (let i = 0; i < 30; i++) {
-                particulas.push({
-                    x, y,
-                    vx: (Math.random() - 0.5) * 12,
-                    vy: (Math.random() - 1) * 10,
-                    tamanho: Math.random() * 8 + 4,
-                    cor,
-                    vida: 1,
-                    taxaMorte: Math.random() * 0.03 + 0.02,
-                    peso: 0.5
-                });
-            }
-        }
-
-        function gerarRastro(x, y) {
-            particulas.push({
-                x: x + (Math.random() - 0.5) * 14,
-                y: y + (Math.random() - 0.5) * 14,
-                vx: (Math.random() - 0.5) * 1.5,
-                vy: Math.random() * -1 - 0.5,
-                tamanho: Math.random() * 3 + 1.5,
-                cor: '#d2b4de',
-                vida: 0.8,
-                taxaMorte: 0.04,
-                peso: -0.05
-            });
-        }
-
-        setInterval(spawnPatogeno, 4000);
-
-        const teclas = { ArrowRight: false, ArrowLeft: false, ArrowUp: false, ' ': false };
-        window.addEventListener('keydown', (e) => {
-            if (Object.prototype.hasOwnProperty.call(teclas, e.key)) {
-                e.preventDefault();
-                teclas[e.key] = true;
-            }
-        });
-        window.addEventListener('keyup', (e) => {
-            if (Object.prototype.hasOwnProperty.call(teclas, e.key)) {
-                e.preventDefault();
-                teclas[e.key] = false;
-            }
-        });
-
-        const btnEsquerda = document.getElementById('btnEsquerda');
-        const btnDireita = document.getElementById('btnDireita');
-        const btnPular = document.getElementById('btnPular');
-        const btnFullscreen = document.getElementById('btnFullscreen');
-
-        function manterTeclaPressionada(botao, tecla) {
-            const ponteirosAtivos = new Set();
-            botao.addEventListener('pointerdown', (e) => {
-                if (e.pointerType === 'mouse' && e.button !== 0) return;
-                e.preventDefault();
-                ponteirosAtivos.add(e.pointerId);
-                botao.classList.add('ativo');
-                teclas[tecla] = true;
-                if (botao.setPointerCapture) botao.setPointerCapture(e.pointerId);
-            });
-            const soltar = (e) => {
-                if (!ponteirosAtivos.has(e.pointerId)) return;
-                e.preventDefault();
-                ponteirosAtivos.delete(e.pointerId);
-                teclas[tecla] = ponteirosAtivos.size > 0;
-                if (ponteirosAtivos.size === 0) botao.classList.remove('ativo');
-            };
-            botao.addEventListener('pointerup', soltar);
-            botao.addEventListener('pointercancel', soltar);
-            botao.addEventListener('lostpointercapture', soltar);
-        }
-
-        manterTeclaPressionada(btnEsquerda, 'ArrowLeft');
-        manterTeclaPressionada(btnDireita, 'ArrowRight');
-
-        let temporizadorPulo = null;
-        btnPular.addEventListener('pointerdown', (e) => {
-            if (e.pointerType === 'mouse' && e.button !== 0) return;
-            e.preventDefault();
-            btnPular.classList.add('ativo');
-            teclas[' '] = true;
-            clearTimeout(temporizadorPulo);
-            temporizadorPulo = setTimeout(() => {
-                teclas[' '] = false;
-                btnPular.classList.remove('ativo');
-            }, 160);
-        });
-        const cancelarPuloVisual = () => btnPular.classList.remove('ativo');
-        btnPular.addEventListener('pointerup', cancelarPuloVisual);
-        btnPular.addEventListener('pointercancel', cancelarPuloVisual);
-        document.addEventListener('contextmenu', (e) => e.preventDefault());
-
-        btnFullscreen.addEventListener('click', async () => {
-            try {
-                if (!document.fullscreenElement && document.documentElement.requestFullscreen) {
-                    await document.documentElement.requestFullscreen();
-                } else if (document.fullscreenElement && document.exitFullscreen) {
-                    await document.exitFullscreen();
-                }
-            } catch (erro) {
-                console.debug('Tela cheia não disponível neste navegador.', erro);
-            }
-        });
-
-        document.addEventListener('fullscreenchange', () => {
-            btnFullscreen.textContent = document.fullscreenElement ? '×' : '⛶';
-            btnFullscreen.title = document.fullscreenElement ? 'Sair da tela cheia' : 'Tela cheia';
-            setTimeout(atualizarViewport, 50);
-        });
-
-        function atualizar() {
-            const configAtual = configDoEstadoAtual();
-            const renderLarguraAtual = configAtual.largura * escala;
-            const renderAlturaAtual = configAtual.altura * escala;
-
-            if (intensidadePulsoEscudo > 0) intensidadePulsoEscudo = Math.max(0, intensidadePulsoEscudo - 0.05);
-
-            for (let i = particulas.length - 1; i >= 0; i--) {
-                const p = particulas[i];
-                p.x += p.vx;
-                p.y += p.vy;
-                p.vy += p.peso;
-                p.vida -= p.taxaMorte;
-                if (p.vida <= 0) particulas.splice(i, 1);
-            }
-
-            if (invulneravel) {
-                tempoInvulneravel--;
-                if (tempoInvulneravel <= 0) invulneravel = false;
-            }
-
-            if (!isTomandoDano) {
-                if (teclas.ArrowRight) {
-                    xPersonagem += 4;
-                    viradoParaEsquerda = false;
-                    if (noChao) estado = 'andando';
-                } else if (teclas.ArrowLeft) {
-                    xPersonagem -= 4;
-                    viradoParaEsquerda = true;
-                    if (noChao) estado = 'andando';
-                } else if (noChao) estado = 'parado';
-
-                if ((teclas.ArrowUp || teclas[' ']) && noChao) {
-                    velocidadeY = forcaPulo;
-                    noChao = false;
-                    estado = 'pulando';
-                    frameAtual = 0;
-                }
-            } else {
-                xPersonagem -= viradoParaEsquerda ? -2 : 2;
-            }
-
-            if (xPersonagem < -50) xPersonagem = -50;
-            if (xPersonagem > larguraMundo - renderLarguraAtual + 50) xPersonagem = larguraMundo - renderLarguraAtual + 50;
-
-            yPersonagem += velocidadeY;
-            if (!noChao) {
-                velocidadeY += gravidade;
-                if (!isTomandoDano) estado = 'pulando';
-            }
-
-            if (yPersonagem >= nivelDoChao - renderAlturaAtual) {
-                yPersonagem = nivelDoChao - renderAlturaAtual;
-                velocidadeY = 0;
-                noChao = true;
-                if (isTomandoDano) {
-                    isTomandoDano = false;
-                    estado = 'parado';
-                } else if (!teclas.ArrowLeft && !teclas.ArrowRight) estado = 'parado';
-            }
-
-            for (const bac of pgpbs) {
-                bac.x += bac.velocidadeX;
-                const larguraRenderizadaBacillus = configBacillus.largura * escalaBacillus;
-                if (bac.x <= 20 || bac.x >= larguraMundo - larguraRenderizadaBacillus - 20) {
-                    bac.velocidadeX *= -1;
-                    bac.viradoParaEsquerda = bac.velocidadeX < 0;
-                }
-                bac.yAtual = bac.yBase + Math.sin(Date.now() / 300) * 20;
-                bac.tempoParaProximaGota--;
-                if (bac.tempoParaProximaGota <= 0) {
-                    spawnGotaRoxaDoBacillus(
-                        bac.x + larguraRenderizadaBacillus / 2,
-                        bac.yAtual + configBacillus.altura * escalaBacillus * 0.8
-                    );
-                    bac.tempoParaProximaGota = 150 + Math.random() * 90;
-                }
-            }
-
-            if (estado === 'parado') {
-                if (tempoPausaIdle > 0) {
-                    tempoPausaIdle--;
-                    frameAtual = 0;
-                } else {
-                    contadorFramesParado++;
-                    if (contadorFramesParado >= velocidadeAnimacaoParado) {
-                        frameAtual++;
-                        if (frameAtual >= configParado.colunas) {
-                            frameAtual = 0;
-                            tempoPausaIdle = 30 + Math.floor(Math.random() * 30);
-                        }
-                        contadorFramesParado = 0;
-                    }
-                }
-            } else {
-                tempoPausaIdle = 0;
-                contadorFrames++;
-                if (contadorFrames >= velocidadeAnimacao) {
-                    if (estado === 'andando') frameAtual = (frameAtual + 1) % configAndando.colunas;
-                    else if (estado === 'pulando' || estado === 'dano') {
-                        if (frameAtual < configAtual.colunas - 1) frameAtual++;
-                    }
-                    frameInimigoAtual = (frameInimigoAtual + 1) % configInimigo.colunas;
-                    contadorFrames = 0;
-                }
-            }
-
-            contadorFramesBacillus++;
-            if (contadorFramesBacillus >= velocidadeAnimacaoBacillus) {
-                frameBacillusAtual = (frameBacillusAtual + 1) % configBacillus.colunas;
-                contadorFramesBacillus = 0;
-            }
-
-            const centroMiguelitoX = xPersonagem + renderLarguraAtual / 2;
-            const centroMiguelitoY = yPersonagem + renderAlturaAtual / 2;
-            for (const gota of gotas) {
-                if (!gota.ativa) continue;
-                gota.y += gota.velocidade;
-                if (Math.random() > 0.3) gerarRastro(gota.x, gota.y);
-                const distX = centroMiguelitoX - gota.x;
-                const distY = centroMiguelitoY - gota.y;
-                if (Math.sqrt(distX * distX + distY * distY) < 70) {
-                    gota.ativa = false;
-                    miguelitoCarregadoRoxo = true;
-                }
-                if (gota.y > ALTURA_MUNDO + 50) gota.ativa = false;
-            }
-
-            const mHitboxWidth = renderLarguraAtual * 0.4;
-            const mHitboxHeight = renderAlturaAtual * 0.85;
-            const mHitboxX = xPersonagem + (renderLarguraAtual - mHitboxWidth) / 2;
-            const mHitboxY = yPersonagem + (renderAlturaAtual - mHitboxHeight);
-
-            for (const pat of patogenos) {
-                if (!pat.ativa) continue;
-                pat.x += pat.velocidade;
-                const pHitboxWidth = pat.largura * 0.5;
-                const pHitboxHeight = pat.altura * 0.55;
-                const pHitboxX = pat.x + (pat.largura - pHitboxWidth) / 2;
-                const pHitboxY = pat.y + (pat.altura - pHitboxHeight);
-                const colidiu = !isTomandoDano && !invulneravel &&
-                    mHitboxX < pHitboxX + pHitboxWidth &&
-                    mHitboxX + mHitboxWidth > pHitboxX &&
-                    mHitboxY < pHitboxY + pHitboxHeight &&
-                    mHitboxY + mHitboxHeight > pHitboxY;
-
-                if (colidiu) {
-                    if (miguelitoCarregadoRoxo) {
-                        pat.ativa = false;
-                        miguelitoCarregadoRoxo = false;
-                        intensidadePulsoEscudo = 1;
-                        gerarExplosao(pHitboxX + pHitboxWidth / 2, pHitboxY + pHitboxHeight / 2, '#a67c52');
-                    } else {
-                        isTomandoDano = true;
-                        invulneravel = true;
-                        tempoInvulneravel = duracaoInvulnerabilidade;
-                        estado = 'dano';
-                        frameAtual = 0;
-                        yPersonagem -= (configDano.altura - configAtual.altura) * escala;
-                        velocidadeY = -12;
-                        noChao = false;
-                    }
-                }
-                if (pat.x < -100) pat.ativa = false;
-            }
-        }
-
-        function desenharFundoCover(imagem, larguraDestino, alturaDestino) {
-            const larguraImagem = imagem.naturalWidth || imagem.width;
-            const alturaImagem = imagem.naturalHeight || imagem.height;
-            const proporcaoImagem = larguraImagem / alturaImagem;
-            const proporcaoDestino = larguraDestino / alturaDestino;
-            let sx = 0, sy = 0, sw = larguraImagem, sh = alturaImagem;
-            if (proporcaoImagem > proporcaoDestino) {
-                sw = alturaImagem * proporcaoDestino;
-                sx = (larguraImagem - sw) / 2;
-            } else {
-                sh = larguraImagem / proporcaoDestino;
-                sy = (alturaImagem - sh) / 2;
-            }
-            ctx.drawImage(imagem, sx, sy, sw, sh, 0, 0, larguraDestino, alturaDestino);
-        }
-
-        function desenhar() {
-            prepararContexto();
-            ctx.clearRect(0, 0, larguraMundo, ALTURA_MUNDO);
-            desenharFundoCover(imgFundo, larguraMundo, ALTURA_MUNDO);
-
-            for (const bac of pgpbs) {
-                const renderLarguraBacillus = configBacillus.largura * escalaBacillus;
-                const renderAlturaBacillus = configBacillus.altura * escalaBacillus;
-                const recorteXBacillus = frameBacillusAtual * configBacillus.largura;
-                ctx.save();
-                if (bac.viradoParaEsquerda) {
-                    ctx.translate(bac.x + renderLarguraBacillus, bac.yAtual);
-                    ctx.scale(-1, 1);
-                    ctx.drawImage(imgBacillus, recorteXBacillus, 0, configBacillus.largura, configBacillus.altura, 0, 0, renderLarguraBacillus, renderAlturaBacillus);
-                } else {
-                    ctx.drawImage(imgBacillus, recorteXBacillus, 0, configBacillus.largura, configBacillus.altura, bac.x, bac.yAtual, renderLarguraBacillus, renderAlturaBacillus);
-                }
-                ctx.restore();
-            }
-
-            for (const p of particulas) {
-                ctx.globalAlpha = p.vida;
-                ctx.fillStyle = p.cor;
-                if (p.peso < 0) {
-                    ctx.shadowColor = p.cor;
-                    ctx.shadowBlur = 5;
-                } else ctx.shadowBlur = 0;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.tamanho, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.shadowBlur = 0;
-            }
-            ctx.globalAlpha = 1;
-
-            for (const pat of patogenos) {
-                if (!pat.ativa) continue;
-                const recorteXinimigo = frameInimigoAtual * configInimigo.largura;
-                ctx.save();
-                ctx.translate(pat.x + pat.largura, pat.y);
-                ctx.scale(-1, 1);
-                ctx.drawImage(imgInimigo, recorteXinimigo, 0, configInimigo.largura, configInimigo.altura, 0, 0, pat.largura, pat.altura);
-                ctx.restore();
-            }
-
-            for (const gota of gotas) {
-                if (!gota.ativa) continue;
-                ctx.save();
-                ctx.shadowColor = '#d2b4de';
-                ctx.shadowBlur = 20;
-                const gradiente = ctx.createRadialGradient(gota.x - 3, gota.y - 3, 1, gota.x, gota.y, gota.raio);
-                gradiente.addColorStop(0, 'rgba(235, 222, 240, 0.9)');
-                gradiente.addColorStop(0.7, 'rgba(155, 89, 182, 0.8)');
-                gradiente.addColorStop(1, 'rgba(118, 68, 138, 0.5)');
-                ctx.beginPath();
-                ctx.arc(gota.x, gota.y, gota.raio, 0, Math.PI * 2);
-                ctx.fillStyle = gradiente;
-                ctx.fill();
-                ctx.lineWidth = 1;
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-                ctx.stroke();
-                ctx.restore();
-            }
-
-            ctx.save();
-            let imagemAtual = imgParado;
-            let configAtual = configParado;
-            if (estado === 'andando') {
-                imagemAtual = imgAndando;
-                configAtual = configAndando;
-            } else if (estado === 'pulando') {
-                imagemAtual = imgPulando;
-                configAtual = configPulando;
-            } else if (estado === 'dano') {
-                imagemAtual = imgDano;
-                configAtual = configDano;
-            }
-
-            const renderLargura = configAtual.largura * escala;
-            const renderAltura = configAtual.altura * escala;
-            const recorteX = frameAtual * configAtual.largura;
-            const centroX = xPersonagem + renderLargura / 2;
-            const centroY = yPersonagem + renderAltura / 2;
-
-            if (intensidadePulsoEscudo > 0) {
-                const raioPulso = 50 + (1 - intensidadePulsoEscudo) * 150;
-                ctx.beginPath();
-                ctx.arc(centroX, centroY, raioPulso, 0, Math.PI * 2);
-                ctx.strokeStyle = `rgba(155, 89, 182, ${intensidadePulsoEscudo})`;
-                ctx.lineWidth = 15 * intensidadePulsoEscudo;
-                ctx.stroke();
-            }
-
-            if (invulneravel && !isTomandoDano) {
-                if (Math.floor(tempoInvulneravel / 5) % 2 === 0) ctx.globalAlpha = 0.4;
-            } else ctx.globalAlpha = 1;
-
-            if (miguelitoCarregadoRoxo && estado !== 'dano') {
-                ctx.shadowColor = '#9b59b6';
-                ctx.shadowBlur = 40;
-            }
-
-            if (viradoParaEsquerda) {
-                ctx.translate(xPersonagem + renderLargura, yPersonagem);
-                ctx.scale(-1, 1);
-                ctx.drawImage(imagemAtual, recorteX, 0, configAtual.largura, configAtual.altura, 0, 0, renderLargura, renderAltura);
-            } else {
-                ctx.drawImage(imagemAtual, recorteX, 0, configAtual.largura, configAtual.altura, xPersonagem, yPersonagem, renderLargura, renderAltura);
-            }
-            ctx.restore();
-        }
-
-        function loopDoJogo() {
-            atualizar();
-            desenhar();
-            requestAnimationFrame(loopDoJogo);
-        }
-
-        let imagensCarregadas = 0;
-        function checarCarregamento() {
-            imagensCarregadas++;
-            if (imagensCarregadas === 7) {
-                atualizarViewport();
-                nivelDoChao = ALTURA_MUNDO - 60;
-                yPersonagem = nivelDoChao - configParado.altura * escala;
-                inicializarBacillus();
-                loopDoJogo();
-            }
-        }
-
-        imgFundo.onload = checarCarregamento;
-        imgAndando.onload = checarCarregamento;
-        imgParado.onload = checarCarregamento;
-        imgPulando.onload = checarCarregamento;
-        imgInimigo.onload = checarCarregamento;
-        imgDano.onload = checarCarregamento;
-        imgBacillus.onload = checarCarregamento;
-    </script>
+<canvas id="jogoCanvas" width="960" height="1080" aria-label="Jogo Miguelito Arcade"></canvas>
+<button id="btnFullscreen" class="btn-fullscreen" type="button" aria-label="Alternar tela cheia" title="Tela cheia">⛶</button>
+<div class="controles-touch" aria-label="Controles do jogo">
+<div class="direcoes-touch">
+<button id="btnEsquerda" class="controle-btn" type="button" aria-label="Andar para a esquerda">◀</button>
+<button id="btnDireita" class="controle-btn" type="button" aria-label="Andar para a direita">▶</button>
+</div>
+<button id="btnPular" class="controle-btn pular" type="button" aria-label="Pular" title="Pular">▲</button>
+</div>
+<script>
+const canvas = document.getElementById('jogoCanvas');
+const ctx = canvas.getContext('2d');
+const ALTURA_MUNDO = 1080;
+const PASSO_FIXO_MS = 1000 / 60;
+const MAX_PASSOS_POR_QUADRO = 5;
+let larguraMundo = 960;
+let escalaTela = 1;
+let pixelRatio = 1;
+let resizeRaf = null;
+function redimensionarCanvas() {
+const larguraCss = Math.max(1, document.documentElement.clientWidth || window.innerWidth);
+const alturaCss = Math.max(
+1,
+window.visualViewport
+? window.visualViewport.height
+: (document.documentElement.clientHeight || window.innerHeight)
+);
+pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+escalaTela = alturaCss / ALTURA_MUNDO;
+larguraMundo = larguraCss / escalaTela;
+canvas.style.width = `${larguraCss}px`;
+canvas.style.height = `${alturaCss}px`;
+canvas.width = Math.round(larguraCss * pixelRatio);
+canvas.height = Math.round(alturaCss * pixelRatio);
+}
+function prepararContexto() {
+const escalaFinal = pixelRatio * escalaTela;
+ctx.setTransform(escalaFinal, 0, 0, escalaFinal, 0, 0);
+ctx.imageSmoothingEnabled = true;
+}
+const imgFundo = new Image();
+imgFundo.src = 'cenario.jpeg';
+const imgAndando = new Image();
+imgAndando.src = 'personagem_sprite.png';
+const imgParado = new Image();
+imgParado.src = 'miguelito_idle.png';
+const imgPulando = new Image();
+imgPulando.src = 'personagem_jumping.png';
+const imgInimigo = new Image();
+imgInimigo.src = 'wormstanding.png';
+const imgDano = new Image();
+imgDano.src = 'personagem_dano.png';
+const imgBacillus = new Image();
+imgBacillus.src = 'bacillus.png';
+const configAndando = { colunas: 6, largura: 560, altura: 704 };
+const configParado = { colunas: 6, largura: 589, altura: 740 };
+const configPulando = { colunas: 4, largura: 588, altura: 628 };
+const configInimigo = { colunas: 6, largura: 610, altura: 688 };
+const configDano = { colunas: 7, largura: 416, altura: 740 };
+const configBacillus = { colunas: 5, largura: 732, altura: 740 };
+const escala = 0.35;
+const escalaInimigo = 0.20;
+const escalaBacillus = 0.25;
+const ajusteYInimigo = 15;
+let xPersonagem = 400;
+let yPersonagem = 0;
+let nivelDoChao = 0;
+let frameAtual = 0;
+let frameInimigoAtual = 0;
+let frameBacillusAtual = 0;
+let estado = 'parado';
+let viradoParaEsquerda = false;
+let velocidadeY = 0;
+const forcaPulo = -18;
+const gravidade = 0.8;
+let noChao = true;
+let isTomandoDano = false;
+let invulneravel = false;
+let tempoInvulneravel = 0;
+const duracaoInvulnerabilidade = 90;
+let contadorFrames = 0;
+const velocidadeAnimacao = 5;
+let contadorFramesBacillus = 0;
+const velocidadeAnimacaoBacillus = 15;
+let contadorFramesParado = 0;
+const velocidadeAnimacaoParado = 12;
+let tempoPausaIdle = 0;
+let gotas = [];
+let miguelitoCarregadoRoxo = false;
+let patogenos = [];
+let particulas = [];
+let intensidadePulsoEscudo = 0;
+let pgpbs = [];
+let intervalPatogenos = null;
+function configDoEstadoAtual() {
+if (estado === 'andando') return configAndando;
+if (estado === 'pulando') return configPulando;
+if (estado === 'dano') return configDano;
+return configParado;
+}
+function limitarBacillusAoMundo(bac) {
+const margem = 20;
+const larguraBacillus = configBacillus.largura * escalaBacillus;
+const limiteDireito = larguraMundo - larguraBacillus - margem;
+if (limiteDireito <= margem) {
+bac.x = (larguraMundo - larguraBacillus) / 2;
+return;
+}
+if (bac.x <= margem) {
+bac.x = margem;
+bac.velocidadeX = Math.abs(bac.velocidadeX);
+bac.viradoParaEsquerda = false;
+} else if (bac.x >= limiteDireito) {
+bac.x = limiteDireito;
+bac.velocidadeX = -Math.abs(bac.velocidadeX);
+bac.viradoParaEsquerda = true;
+}
+}
+function atualizarViewport() {
+redimensionarCanvas();
+nivelDoChao = ALTURA_MUNDO - 60;
+const configAtual = configDoEstadoAtual();
+const larguraAtual = configAtual.largura * escala;
+const alturaAtual = configAtual.altura * escala;
+xPersonagem = Math.max(-50, Math.min(xPersonagem, larguraMundo - larguraAtual + 50));
+if (noChao) yPersonagem = nivelDoChao - alturaAtual;
+for (const bac of pgpbs) limitarBacillusAoMundo(bac);
+}
+function agendarAtualizacaoViewport() {
+if (resizeRaf !== null) cancelAnimationFrame(resizeRaf);
+resizeRaf = requestAnimationFrame(() => {
+resizeRaf = null;
+atualizarViewport();
+});
+}
+window.addEventListener('resize', agendarAtualizacaoViewport);
+window.addEventListener('orientationchange', () => {
+agendarAtualizacaoViewport();
+setTimeout(atualizarViewport, 180);
+});
+if (window.visualViewport) window.visualViewport.addEventListener('resize', agendarAtualizacaoViewport);
+atualizarViewport();
+function inicializarBacillus() {
+pgpbs.push({
+x: 100,
+yBase: 180,
+yAtual: 180,
+velocidadeX: 2.5,
+viradoParaEsquerda: false,
+tempoParaProximaGota: 120
+});
+for (const bac of pgpbs) limitarBacillusAoMundo(bac);
+}
+function spawnGotaRoxaDoBacillus(origemX, origemY) {
+gotas.push({
+x: origemX,
+y: origemY,
+raio: 15,
+velocidade: 3 + Math.random() * 2,
+ativa: true
+});
+}
+function spawnPatogeno() {
+const alturaRealInimigo = configInimigo.altura * escalaInimigo;
+patogenos.push({
+x: larguraMundo + 50,
+y: nivelDoChao - alturaRealInimigo - ajusteYInimigo,
+largura: configInimigo.largura * escalaInimigo,
+altura: alturaRealInimigo,
+velocidade: -1.5 - Math.random() * 1.5,
+ativa: true
+});
+}
+function gerarExplosao(x, y, cor) {
+for (let i = 0; i < 30; i++) {
+particulas.push({
+x,
+y,
+vx: (Math.random() - 0.5) * 12,
+vy: (Math.random() - 1) * 10,
+tamanho: Math.random() * 8 + 4,
+cor,
+vida: 1,
+taxaMorte: Math.random() * 0.03 + 0.02,
+peso: 0.5
+});
+}
+}
+function gerarRastro(x, y) {
+particulas.push({
+x: x + (Math.random() - 0.5) * 14,
+y: y + (Math.random() - 0.5) * 14,
+vx: (Math.random() - 0.5) * 1.5,
+vy: Math.random() * -1 - 0.5,
+tamanho: Math.random() * 3 + 1.5,
+cor: '#d2b4de',
+vida: 0.8,
+taxaMorte: 0.04,
+peso: -0.05
+});
+}
+const teclas = { ArrowRight: false, ArrowLeft: false, ArrowUp: false, ' ': false };
+window.addEventListener('keydown', (e) => {
+if (Object.prototype.hasOwnProperty.call(teclas, e.key)) {
+e.preventDefault();
+teclas[e.key] = true;
+}
+});
+window.addEventListener('keyup', (e) => {
+if (Object.prototype.hasOwnProperty.call(teclas, e.key)) {
+e.preventDefault();
+teclas[e.key] = false;
+}
+});
+const btnEsquerda = document.getElementById('btnEsquerda');
+const btnDireita = document.getElementById('btnDireita');
+const btnPular = document.getElementById('btnPular');
+const btnFullscreen = document.getElementById('btnFullscreen');
+function manterTeclaPressionada(botao, tecla) {
+const ponteirosAtivos = new Set();
+botao.addEventListener('pointerdown', (e) => {
+if (e.pointerType === 'mouse' && e.button !== 0) return;
+e.preventDefault();
+ponteirosAtivos.add(e.pointerId);
+botao.classList.add('ativo');
+teclas[tecla] = true;
+if (botao.setPointerCapture) botao.setPointerCapture(e.pointerId);
+});
+const soltar = (e) => {
+if (!ponteirosAtivos.has(e.pointerId)) return;
+e.preventDefault();
+ponteirosAtivos.delete(e.pointerId);
+teclas[tecla] = ponteirosAtivos.size > 0;
+if (ponteirosAtivos.size === 0) botao.classList.remove('ativo');
+};
+botao.addEventListener('pointerup', soltar);
+botao.addEventListener('pointercancel', soltar);
+botao.addEventListener('lostpointercapture', soltar);
+}
+manterTeclaPressionada(btnEsquerda, 'ArrowLeft');
+manterTeclaPressionada(btnDireita, 'ArrowRight');
+let temporizadorPulo = null;
+btnPular.addEventListener('pointerdown', (e) => {
+if (e.pointerType === 'mouse' && e.button !== 0) return;
+e.preventDefault();
+btnPular.classList.add('ativo');
+teclas[' '] = true;
+clearTimeout(temporizadorPulo);
+temporizadorPulo = setTimeout(() => {
+teclas[' '] = false;
+btnPular.classList.remove('ativo');
+}, 160);
+});
+const cancelarPuloVisual = () => btnPular.classList.remove('ativo');
+btnPular.addEventListener('pointerup', cancelarPuloVisual);
+btnPular.addEventListener('pointercancel', cancelarPuloVisual);
+document.addEventListener('contextmenu', (e) => e.preventDefault());
+function elementoFullscreenAtual() {
+return document.fullscreenElement || document.webkitFullscreenElement || null;
+}
+btnFullscreen.addEventListener('click', async () => {
+try {
+const elemento = document.documentElement;
+const solicitarFullscreen = elemento.requestFullscreen || elemento.webkitRequestFullscreen;
+const sairFullscreen = document.exitFullscreen || document.webkitExitFullscreen;
+if (!elementoFullscreenAtual() && solicitarFullscreen) {
+await solicitarFullscreen.call(elemento);
+} else if (elementoFullscreenAtual() && sairFullscreen) {
+await sairFullscreen.call(document);
+}
+} catch (erro) {
+console.debug('Tela cheia não disponível neste navegador.', erro);
+}
+});
+function tratarMudancaFullscreen() {
+btnFullscreen.textContent = elementoFullscreenAtual() ? '×' : '⛶';
+btnFullscreen.title = elementoFullscreenAtual() ? 'Sair da tela cheia' : 'Tela cheia';
+agendarAtualizacaoViewport();
+setTimeout(atualizarViewport, 120);
+setTimeout(atualizarViewport, 320);
+}
+document.addEventListener('fullscreenchange', tratarMudancaFullscreen);
+document.addEventListener('webkitfullscreenchange', tratarMudancaFullscreen);
+function atualizar() {
+const configAtual = configDoEstadoAtual();
+const renderLarguraAtual = configAtual.largura * escala;
+const renderAlturaAtual = configAtual.altura * escala;
+if (intensidadePulsoEscudo > 0) {
+intensidadePulsoEscudo = Math.max(0, intensidadePulsoEscudo - 0.05);
+}
+for (let i = particulas.length - 1; i >= 0; i--) {
+const p = particulas[i];
+p.x += p.vx;
+p.y += p.vy;
+p.vy += p.peso;
+p.vida -= p.taxaMorte;
+if (p.vida <= 0) particulas.splice(i, 1);
+}
+if (invulneravel) {
+tempoInvulneravel--;
+if (tempoInvulneravel <= 0) invulneravel = false;
+}
+if (!isTomandoDano) {
+if (teclas.ArrowRight) {
+xPersonagem += 4;
+viradoParaEsquerda = false;
+if (noChao) estado = 'andando';
+} else if (teclas.ArrowLeft) {
+xPersonagem -= 4;
+viradoParaEsquerda = true;
+if (noChao) estado = 'andando';
+} else if (noChao) {
+estado = 'parado';
+}
+if ((teclas.ArrowUp || teclas[' ']) && noChao) {
+velocidadeY = forcaPulo;
+noChao = false;
+estado = 'pulando';
+frameAtual = 0;
+}
+} else {
+xPersonagem -= viradoParaEsquerda ? -2 : 2;
+}
+if (xPersonagem < -50) xPersonagem = -50;
+if (xPersonagem > larguraMundo - renderLarguraAtual + 50) {
+xPersonagem = larguraMundo - renderLarguraAtual + 50;
+}
+yPersonagem += velocidadeY;
+if (!noChao) {
+velocidadeY += gravidade;
+if (!isTomandoDano) estado = 'pulando';
+}
+if (yPersonagem >= nivelDoChao - renderAlturaAtual) {
+yPersonagem = nivelDoChao - renderAlturaAtual;
+velocidadeY = 0;
+noChao = true;
+if (isTomandoDano) {
+isTomandoDano = false;
+estado = 'parado';
+} else if (!teclas.ArrowLeft && !teclas.ArrowRight) {
+estado = 'parado';
+}
+}
+const agora = performance.now();
+for (const bac of pgpbs) {
+bac.x += bac.velocidadeX;
+limitarBacillusAoMundo(bac);
+bac.yAtual = bac.yBase + Math.sin(agora / 300) * 20;
+bac.tempoParaProximaGota--;
+if (bac.tempoParaProximaGota <= 0) {
+const larguraRenderizadaBacillus = configBacillus.largura * escalaBacillus;
+spawnGotaRoxaDoBacillus(
+bac.x + larguraRenderizadaBacillus / 2,
+bac.yAtual + configBacillus.altura * escalaBacillus * 0.8
+);
+bac.tempoParaProximaGota = 150 + Math.random() * 90;
+}
+}
+if (estado === 'parado') {
+if (tempoPausaIdle > 0) {
+tempoPausaIdle--;
+frameAtual = 0;
+} else {
+contadorFramesParado++;
+if (contadorFramesParado >= velocidadeAnimacaoParado) {
+frameAtual++;
+if (frameAtual >= configParado.colunas) {
+frameAtual = 0;
+tempoPausaIdle = 30 + Math.floor(Math.random() * 30);
+}
+contadorFramesParado = 0;
+}
+}
+} else {
+tempoPausaIdle = 0;
+contadorFrames++;
+if (contadorFrames >= velocidadeAnimacao) {
+if (estado === 'andando') {
+frameAtual = (frameAtual + 1) % configAndando.colunas;
+} else if (estado === 'pulando' || estado === 'dano') {
+if (frameAtual < configAtual.colunas - 1) frameAtual++;
+}
+frameInimigoAtual = (frameInimigoAtual + 1) % configInimigo.colunas;
+contadorFrames = 0;
+}
+}
+contadorFramesBacillus++;
+if (contadorFramesBacillus >= velocidadeAnimacaoBacillus) {
+frameBacillusAtual = (frameBacillusAtual + 1) % configBacillus.colunas;
+contadorFramesBacillus = 0;
+}
+const centroMiguelitoX = xPersonagem + renderLarguraAtual / 2;
+const centroMiguelitoY = yPersonagem + renderAlturaAtual / 2;
+for (let i = gotas.length - 1; i >= 0; i--) {
+const gota = gotas[i];
+if (!gota.ativa) {
+gotas.splice(i, 1);
+continue;
+}
+gota.y += gota.velocidade;
+if (Math.random() > 0.3) gerarRastro(gota.x, gota.y);
+const distX = centroMiguelitoX - gota.x;
+const distY = centroMiguelitoY - gota.y;
+if (Math.sqrt(distX * distX + distY * distY) < 70) {
+gotas.splice(i, 1);
+miguelitoCarregadoRoxo = true;
+continue;
+}
+if (gota.y > ALTURA_MUNDO + 50) gotas.splice(i, 1);
+}
+const mHitboxWidth = renderLarguraAtual * 0.4;
+const mHitboxHeight = renderAlturaAtual * 0.85;
+const mHitboxX = xPersonagem + (renderLarguraAtual - mHitboxWidth) / 2;
+const mHitboxY = yPersonagem + (renderAlturaAtual - mHitboxHeight);
+for (let i = patogenos.length - 1; i >= 0; i--) {
+const pat = patogenos[i];
+if (!pat.ativa) {
+patogenos.splice(i, 1);
+continue;
+}
+pat.x += pat.velocidade;
+const pHitboxWidth = pat.largura * 0.5;
+const pHitboxHeight = pat.altura * 0.55;
+const pHitboxX = pat.x + (pat.largura - pHitboxWidth) / 2;
+const pHitboxY = pat.y + (pat.altura - pHitboxHeight);
+const colidiu = !isTomandoDano && !invulneravel &&
+mHitboxX < pHitboxX + pHitboxWidth &&
+mHitboxX + mHitboxWidth > pHitboxX &&
+mHitboxY < pHitboxY + pHitboxHeight &&
+mHitboxY + mHitboxHeight > pHitboxY;
+if (colidiu) {
+if (miguelitoCarregadoRoxo) {
+patogenos.splice(i, 1);
+miguelitoCarregadoRoxo = false;
+intensidadePulsoEscudo = 1;
+gerarExplosao(
+pHitboxX + pHitboxWidth / 2,
+pHitboxY + pHitboxHeight / 2,
+'#a67c52'
+);
+continue;
+} else {
+isTomandoDano = true;
+invulneravel = true;
+tempoInvulneravel = duracaoInvulnerabilidade;
+estado = 'dano';
+frameAtual = 0;
+yPersonagem -= (configDano.altura - configAtual.altura) * escala;
+velocidadeY = -12;
+noChao = false;
+}
+}
+if (pat.x < -100) patogenos.splice(i, 1);
+}
+}
+function desenharFundoCover(imagem, larguraDestino, alturaDestino) {
+const larguraImagem = imagem.naturalWidth || imagem.width;
+const alturaImagem = imagem.naturalHeight || imagem.height;
+const proporcaoImagem = larguraImagem / alturaImagem;
+const proporcaoDestino = larguraDestino / alturaDestino;
+let sx = 0;
+let sy = 0;
+let sw = larguraImagem;
+let sh = alturaImagem;
+if (proporcaoImagem > proporcaoDestino) {
+sw = alturaImagem * proporcaoDestino;
+sx = (larguraImagem - sw) / 2;
+} else {
+sh = larguraImagem / proporcaoDestino;
+sy = (alturaImagem - sh) / 2;
+}
+ctx.drawImage(imagem, sx, sy, sw, sh, 0, 0, larguraDestino, alturaDestino);
+}
+function desenhar() {
+prepararContexto();
+ctx.clearRect(0, 0, larguraMundo, ALTURA_MUNDO);
+desenharFundoCover(imgFundo, larguraMundo, ALTURA_MUNDO);
+for (const bac of pgpbs) {
+const renderLarguraBacillus = configBacillus.largura * escalaBacillus;
+const renderAlturaBacillus = configBacillus.altura * escalaBacillus;
+const recorteXBacillus = frameBacillusAtual * configBacillus.largura;
+ctx.save();
+if (bac.viradoParaEsquerda) {
+ctx.translate(bac.x + renderLarguraBacillus, bac.yAtual);
+ctx.scale(-1, 1);
+ctx.drawImage(
+imgBacillus,
+recorteXBacillus,
+0,
+configBacillus.largura,
+configBacillus.altura,
+0,
+0,
+renderLarguraBacillus,
+renderAlturaBacillus
+);
+} else {
+ctx.drawImage(
+imgBacillus,
+recorteXBacillus,
+0,
+configBacillus.largura,
+configBacillus.altura,
+bac.x,
+bac.yAtual,
+renderLarguraBacillus,
+renderAlturaBacillus
+);
+}
+ctx.restore();
+}
+for (const p of particulas) {
+ctx.globalAlpha = p.vida;
+ctx.fillStyle = p.cor;
+if (p.peso < 0) {
+ctx.shadowColor = p.cor;
+ctx.shadowBlur = 5;
+} else {
+ctx.shadowBlur = 0;
+}
+ctx.beginPath();
+ctx.arc(p.x, p.y, p.tamanho, 0, Math.PI * 2);
+ctx.fill();
+ctx.shadowBlur = 0;
+}
+ctx.globalAlpha = 1;
+for (const pat of patogenos) {
+if (!pat.ativa) continue;
+const recorteXinimigo = frameInimigoAtual * configInimigo.largura;
+ctx.save();
+ctx.translate(pat.x + pat.largura, pat.y);
+ctx.scale(-1, 1);
+ctx.drawImage(
+imgInimigo,
+recorteXinimigo,
+0,
+configInimigo.largura,
+configInimigo.altura,
+0,
+0,
+pat.largura,
+pat.altura
+);
+ctx.restore();
+}
+for (const gota of gotas) {
+if (!gota.ativa) continue;
+ctx.save();
+ctx.shadowColor = '#d2b4de';
+ctx.shadowBlur = 20;
+const gradiente = ctx.createRadialGradient(
+gota.x - 3,
+gota.y - 3,
+1,
+gota.x,
+gota.y,
+gota.raio
+);
+gradiente.addColorStop(0, 'rgba(235, 222, 240, 0.9)');
+gradiente.addColorStop(0.7, 'rgba(155, 89, 182, 0.8)');
+gradiente.addColorStop(1, 'rgba(118, 68, 138, 0.5)');
+ctx.beginPath();
+ctx.arc(gota.x, gota.y, gota.raio, 0, Math.PI * 2);
+ctx.fillStyle = gradiente;
+ctx.fill();
+ctx.lineWidth = 1;
+ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+ctx.stroke();
+ctx.restore();
+}
+ctx.save();
+let imagemAtual = imgParado;
+let configAtual = configParado;
+if (estado === 'andando') {
+imagemAtual = imgAndando;
+configAtual = configAndando;
+} else if (estado === 'pulando') {
+imagemAtual = imgPulando;
+configAtual = configPulando;
+} else if (estado === 'dano') {
+imagemAtual = imgDano;
+configAtual = configDano;
+}
+const renderLargura = configAtual.largura * escala;
+const renderAltura = configAtual.altura * escala;
+const recorteX = frameAtual * configAtual.largura;
+const centroX = xPersonagem + renderLargura / 2;
+const centroY = yPersonagem + renderAltura / 2;
+if (intensidadePulsoEscudo > 0) {
+const raioPulso = 50 + (1 - intensidadePulsoEscudo) * 150;
+ctx.beginPath();
+ctx.arc(centroX, centroY, raioPulso, 0, Math.PI * 2);
+ctx.strokeStyle = `rgba(155, 89, 182, ${intensidadePulsoEscudo})`;
+ctx.lineWidth = 15 * intensidadePulsoEscudo;
+ctx.stroke();
+}
+if (invulneravel && !isTomandoDano) {
+if (Math.floor(tempoInvulneravel / 5) % 2 === 0) ctx.globalAlpha = 0.4;
+} else {
+ctx.globalAlpha = 1;
+}
+if (miguelitoCarregadoRoxo && estado !== 'dano') {
+ctx.shadowColor = '#9b59b6';
+ctx.shadowBlur = 40;
+}
+if (viradoParaEsquerda) {
+ctx.translate(xPersonagem + renderLargura, yPersonagem);
+ctx.scale(-1, 1);
+ctx.drawImage(
+imagemAtual,
+recorteX,
+0,
+configAtual.largura,
+configAtual.altura,
+0,
+0,
+renderLargura,
+renderAltura
+);
+} else {
+ctx.drawImage(
+imagemAtual,
+recorteX,
+0,
+configAtual.largura,
+configAtual.altura,
+xPersonagem,
+yPersonagem,
+renderLargura,
+renderAltura
+);
+}
+ctx.restore();
+}
+let instanteAnterior = 0;
+let acumulador = 0;
+function loopDoJogo(instanteAtual) {
+if (!instanteAnterior) instanteAnterior = instanteAtual;
+const tempoDecorrido = Math.min(instanteAtual - instanteAnterior, 100);
+instanteAnterior = instanteAtual;
+acumulador += tempoDecorrido;
+let passosExecutados = 0;
+while (acumulador >= PASSO_FIXO_MS && passosExecutados < MAX_PASSOS_POR_QUADRO) {
+atualizar();
+acumulador -= PASSO_FIXO_MS;
+passosExecutados++;
+}
+if (passosExecutados === MAX_PASSOS_POR_QUADRO) acumulador = 0;
+desenhar();
+requestAnimationFrame(loopDoJogo);
+}
+document.addEventListener('visibilitychange', () => {
+instanteAnterior = 0;
+acumulador = 0;
+});
+let imagensCarregadas = 0;
+function checarCarregamento() {
+imagensCarregadas++;
+if (imagensCarregadas === 7) {
+atualizarViewport();
+nivelDoChao = ALTURA_MUNDO - 60;
+yPersonagem = nivelDoChao - configParado.altura * escala;
+inicializarBacillus();
+intervalPatogenos = setInterval(spawnPatogeno, 4000);
+requestAnimationFrame(loopDoJogo);
+}
+}
+imgFundo.onload = checarCarregamento;
+imgAndando.onload = checarCarregamento;
+imgParado.onload = checarCarregamento;
+imgPulando.onload = checarCarregamento;
+imgInimigo.onload = checarCarregamento;
+imgDano.onload = checarCarregamento;
+imgBacillus.onload = checarCarregamento;
+</script>
 </body>
 </html>
