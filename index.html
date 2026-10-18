@@ -249,6 +249,110 @@ canvas {
 @media (hover: none), (pointer: coarse) {
   .faixa-controles { display: flex; }
   .so-teclado { display: none; }
+  .so-toque { display: flex !important; }
+}
+
+/* ---------- Modo "arrastar e tocar" ---------- */
+.zona-toque {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: none;
+  touch-action: none;
+}
+body.modo-arrastar .zona-toque { display: block; }
+body.modo-arrastar .faixa-controles { pointer-events: none; }
+body.modo-arrastar .faixa-controles .direcoes-touch,
+body.modo-arrastar .faixa-controles #btnPular { display: none; }
+.dicas-arrastar {
+  display: none;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: rgba(255, 244, 232, 0.78);
+  font-size: 14px;
+  font-weight: 700;
+}
+body.modo-arrastar .dicas-arrastar { display: flex; }
+.dica-zona {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 64px;
+  border-radius: 32px;
+  border: 2px dashed rgba(255, 236, 214, 0.25);
+  background: rgba(0, 0, 0, 0.15);
+}
+.dica-zona .seta { font-size: 22px; opacity: 0.8; }
+.dica-zona.pular { border-color: rgba(210, 180, 222, 0.4); }
+.dica-zona .circulo {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  background: rgba(88, 52, 104, 0.9);
+}
+.joy-base, .joy-pino, .toque-pulo {
+  position: absolute;
+  z-index: 16;
+  border-radius: 50%;
+  pointer-events: none;
+  display: none;
+  transform: translate(-50%, -50%);
+}
+.joy-base {
+  width: 120px;
+  height: 56px;
+  border-radius: 28px;
+  border: 2px solid rgba(255, 236, 214, 0.35);
+  background: rgba(0, 0, 0, 0.18);
+}
+.joy-pino {
+  width: 46px;
+  height: 46px;
+  background: radial-gradient(circle at 40% 35%, rgba(255, 255, 255, 0.5), rgba(255, 236, 214, 0.25));
+  border: 2px solid rgba(255, 255, 255, 0.6);
+}
+.toque-pulo {
+  width: 70px;
+  height: 70px;
+  border: 3px solid rgba(210, 180, 222, 0.8);
+}
+.toque-pulo.ativo { display: block; animation: onda-toque 380ms ease-out forwards; }
+@keyframes onda-toque {
+  from { opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(1.4); }
+}
+.escolha-controles {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--texto-suave);
+}
+.escolha-controles button {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--texto-suave);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.escolha-controles button.ativo {
+  color: #fff;
+  border-color: rgba(210, 180, 222, 0.9);
+  background: rgba(155, 89, 182, 0.55);
 }
 @media (max-width: 360px) {
   .controle-btn { width: 68px; height: 68px; }
@@ -356,15 +460,29 @@ canvas {
     <button id="btnDireita" class="controle-btn" type="button" aria-label="Andar para a direita">▶</button>
   </div>
   <button id="btnPular" class="controle-btn pular" type="button" aria-label="Pular" title="Pular">▲</button>
+  <div class="dicas-arrastar" aria-hidden="true">
+    <div class="dica-zona"><span class="seta">⟵</span><span>arraste</span><span class="seta">⟶</span></div>
+    <div class="dica-zona pular"><span class="circulo">▲</span><span>toque: pular</span></div>
+  </div>
 </div>
+
+<div class="zona-toque" id="zonaToque" aria-hidden="true"></div>
+<div class="joy-base" id="joyBase"></div>
+<div class="joy-pino" id="joyPino"></div>
+<div class="toque-pulo" id="toquePulo"></div>
 
 <div class="tela visivel" id="telaInicio">
   <div class="cartao">
     <h1>Miguelito<span>Arcade</span></h1>
     <p>Proteja o feijão! Patógeno que escapa faz a <b>planta murchar</b>.</p>
     <p>Pegue a gota roxa do <b>Bacillus</b> <i class="legenda-gota"></i> e encoste no <b>nematoide</b> para neutralizá-lo.</p>
-    <p>Sem a gota, o nematoide te machuca: pule por cima dele.</p>
+    <p>Sem a gota, o nematoide te machuca: corra na direção dele e pule por cima.</p>
     <button class="btn-grande" id="btnComecar" type="button">Toque para começar</button>
+    <div class="escolha-controles so-toque" role="group" aria-label="Controles">
+      <span>Controles:</span>
+      <button type="button" data-modo="arrastar">Arrastar e tocar</button>
+      <button type="button" data-modo="botoes">Botões</button>
+    </div>
     <p class="dica so-teclado">← → andar · ↑ ou espaço pular</p>
   </div>
 </div>
@@ -634,7 +752,7 @@ const CFG = {
     regen: 360,              // sem colônias, recupera 1 a cada 6 s
   },
   bacillus: { gotaMin: 150, gotaVar: 90 },
-  nematoide: { velMin: 2.0, velVar: 1.6 },
+  nematoide: { velMin: 2.0, velVar: 1.6, aviso: 60 },   // seta na borda 1 s antes
   ralstonia: {
     surge: 90,               // ato 1: 1,5 s crescendo ao fundo (não fere)
     rondaMin: 200,           // ato 2: 3,3 a 5 s rondando
@@ -658,7 +776,10 @@ const CFG = {
   // Pulo e caixas de colisão (frações do quadro do sprite).
   // Medido: correndo contra o nematoide, a janela para soltar o pulo
   // passou de ~0,17 s para ~0,42 s com estes valores.
-  pulo: { forca: -17, gravidade: 0.65 },
+  // corte: no modo arrastar, soltar o dedo cedo encurta um pouco o pulo
+  // (~200 de altura contra ~222). Medido: mesmo o toque curto deixa
+  // ~0,34 s de janela para passar o nematoide correndo.
+  pulo: { forca: -17, gravidade: 0.65, corte: -14, buffer: 8 },
   colisao: { miguelitoLargura: 0.30, miguelitoAltura: 0.85, nematoideLargura: 0.38, nematoideAltura: 0.50 },
   pausaEntreOndas: 170,
   ondas: [
@@ -870,6 +991,10 @@ let gotas = [];
 let miguelitoCarregadoRoxo = false;   // carga do Bacillus (contra nematoide)
 let temHalo = false;                  // carga da Pseudomonas (contra Ralstonia)
 let patogenos = [];                   // nematoides
+let avisosNematoide = [];             // setas na borda antes de cada nematoide
+let pedidoPulo = 0;                   // pulo pedido por toque (com tolerância)
+let puloSegurado = false;             // dedo ainda na zona de pulo
+let puloDeToque = false;              // o pulo atual veio da zona de toque
 let ralstonias = [];
 let colonias = [];
 let pseudomonas = null;
@@ -1100,7 +1225,7 @@ function iniciarOnda(numero) {
 
 function ondaTerminou() {
   return onda.nematoidesRestantes === 0 && onda.ralstoniasRestantes === 0 &&
-    patogenos.length === 0 && ralstonias.every((r) => r.fase === 'inibida');
+    patogenos.length === 0 && avisosNematoide.length === 0 && ralstonias.every((r) => r.fase === 'inibida');
 }
 
 function atualizarOnda() {
@@ -1113,7 +1238,7 @@ function atualizarOnda() {
   if (onda.nematoidesRestantes > 0) {
     onda.tNematoide--;
     if (onda.tNematoide <= 0) {
-      spawnNematoide(cfg);
+      avisarNematoide(cfg);
       onda.nematoidesRestantes--;
       onda.tNematoide = cfg.intervaloNematoide;
     }
@@ -1134,10 +1259,20 @@ function atualizarOnda() {
 //  Rasteja em ondas (avança e desacelera, o corpo sobe e desce).
 //  Se atravessar a área sem ser neutralizado, ataca a raiz.
 // ============================================================
-function spawnNematoide(cfg) {
+function sortearLado(cfg) {
+  return cfg.ambosLados && Math.random() < 0.5 ? 1 : -1;
+}
+
+// Seta na borda por onde o nematoide vai entrar, 1 s antes.
+function avisarNematoide(cfg) {
+  avisosNematoide.push({ dir: sortearLado(cfg), t: CFG.nematoide.aviso, cfg });
+  Som.tocar('patogeno');
+}
+
+function spawnNematoide(cfg, lado) {
   const largura = configInimigo.largura * escalaInimigo;
   const altura = configInimigo.altura * escalaInimigo;
-  const dir = cfg.ambosLados && Math.random() < 0.5 ? 1 : -1;
+  const dir = lado || sortearLado(cfg);
   const vel = (CFG.nematoide.velMin + Math.random() * CFG.nematoide.velVar) * cfg.velNematoide;
   patogenos.push({
     x: dir < 0 ? larguraJogo + 50 : -50 - largura,
@@ -1149,7 +1284,6 @@ function spawnNematoide(cfg) {
     fase: Math.random() * Math.PI * 2,
     t: 0,
   });
-  Som.tocar('patogeno');
 }
 
 function ondulacaoNematoide(pat) {
@@ -1157,6 +1291,14 @@ function ondulacaoNematoide(pat) {
 }
 
 function atualizarNematoides(hb) {
+  for (let i = avisosNematoide.length - 1; i >= 0; i--) {
+    const a = avisosNematoide[i];
+    a.t--;
+    if (a.t <= 0) {
+      spawnNematoide(a.cfg, a.dir);
+      avisosNematoide.splice(i, 1);
+    }
+  }
   for (let i = patogenos.length - 1; i >= 0; i--) {
     const pat = patogenos[i];
     pat.t++;
@@ -1589,6 +1731,10 @@ function zerarPartida() {
   inicializarBacillus();
   for (const tecla in teclas) teclas[tecla] = false;
   onda = null;
+  avisosNematoide = [];
+  pedidoPulo = 0;
+  puloSegurado = false;
+  soltarJoystick();
   elCargaPseudo.classList.remove('disponivel');
   elOnda.textContent = '';
   atualizarHud();
@@ -1599,6 +1745,7 @@ function ehToque() {
 }
 
 function comecarPartida() {
+  aplicarModoControle();
   Som.iniciar();
   if (ehToque()) entrarTelaCheia();
   zerarPartida();
@@ -1694,6 +1841,118 @@ btnPular.addEventListener('pointerdown', (e) => {
 const cancelarPuloVisual = () => btnPular.classList.remove('ativo');
 btnPular.addEventListener('pointerup', cancelarPuloVisual);
 btnPular.addEventListener('pointercancel', cancelarPuloVisual);
+
+// ------------------------------------------------------------
+//  Modo "arrastar e tocar" (padrão no toque)
+//  Metade esquerda da tela: encostar e arrastar para os lados anda.
+//  Metade direita: tocar pula; segurar o dedo pula mais alto.
+//  Os botões continuam disponíveis como opção na tela inicial.
+// ------------------------------------------------------------
+const CHAVE_MODO = 'miguelito-arcade-controles';
+let modoControle = 'arrastar';
+try {
+  const salvo = localStorage.getItem(CHAVE_MODO);
+  if (salvo === 'arrastar' || salvo === 'botoes') modoControle = salvo;
+} catch (e) { /* armazenamento indisponível: usa o padrão */ }
+
+const zonaToque = document.getElementById('zonaToque');
+const joyBase = document.getElementById('joyBase');
+const joyPino = document.getElementById('joyPino');
+const toquePulo = document.getElementById('toquePulo');
+const JOY = { zonaMorta: 14, alcance: 46 };
+let joy = null;
+const dedosPulo = new Set();
+
+function modoArrastarAtivo() {
+  return document.body.classList.contains('modo-arrastar');
+}
+
+function aplicarModoControle() {
+  document.body.classList.toggle('modo-arrastar', modoControle === 'arrastar' && ehToque());
+  document.querySelectorAll('.escolha-controles button').forEach((b) => {
+    const ativo = b.dataset.modo === modoControle;
+    b.classList.toggle('ativo', ativo);
+    b.setAttribute('aria-pressed', String(ativo));
+  });
+}
+document.querySelectorAll('.escolha-controles button').forEach((b) => {
+  b.addEventListener('click', () => {
+    modoControle = b.dataset.modo;
+    try { localStorage.setItem(CHAVE_MODO, modoControle); } catch (e) { /* ignora */ }
+    aplicarModoControle();
+  });
+});
+
+function posicionar(el, x, y) {
+  el.style.left = `${x}px`;
+  el.style.top = `${y}px`;
+}
+
+function soltarJoystick() {
+  joy = null;
+  teclas.ArrowLeft = false;
+  teclas.ArrowRight = false;
+  joyBase.style.display = 'none';
+  joyPino.style.display = 'none';
+}
+
+zonaToque.addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  if (zonaToque.setPointerCapture) zonaToque.setPointerCapture(e.pointerId);
+  if (e.clientX < window.innerWidth / 2) {
+    if (joy) return;
+    joy = { id: e.pointerId, x0: e.clientX, y0: e.clientY, dir: 0, pico: e.clientX };
+    posicionar(joyBase, e.clientX, e.clientY);
+    posicionar(joyPino, e.clientX, e.clientY);
+    joyBase.style.display = 'block';
+    joyPino.style.display = 'block';
+  } else {
+    dedosPulo.add(e.pointerId);
+    puloSegurado = true;
+    pedidoPulo = CFG.pulo.buffer;
+    posicionar(toquePulo, e.clientX, e.clientY);
+    toquePulo.classList.remove('ativo');
+    void toquePulo.offsetWidth;
+    toquePulo.classList.add('ativo');
+  }
+});
+
+zonaToque.addEventListener('pointermove', (e) => {
+  if (!joy || e.pointerId !== joy.id) return;
+  e.preventDefault();
+  let dx = e.clientX - joy.x0;
+  // Base flutuante: se o dedo vai além do alcance, a base acompanha.
+  if (Math.abs(dx) > JOY.alcance) {
+    joy.x0 = e.clientX - Math.sign(dx) * JOY.alcance;
+    dx = Math.sign(dx) * JOY.alcance;
+  }
+  // Inversão rápida: recuar 12 px a partir do ponto mais distante já
+  // basta para mudar de direção, sem atravessar a zona morta inteira.
+  const direcao = dx > JOY.zonaMorta ? 1 : dx < -JOY.zonaMorta ? -1 : 0;
+  if (direcao !== 0) {
+    if (joy.dir !== direcao) { joy.dir = direcao; joy.pico = e.clientX; }
+    if (direcao > 0) joy.pico = Math.max(joy.pico, e.clientX);
+    else joy.pico = Math.min(joy.pico, e.clientX);
+  }
+  if (joy.dir && (e.clientX - joy.pico) * joy.dir < -12) {
+    joy.dir = -joy.dir;
+    joy.pico = e.clientX;
+    joy.x0 = e.clientX - joy.dir * (JOY.zonaMorta + 2);
+    dx = e.clientX - joy.x0;
+  }
+  posicionar(joyBase, joy.x0, joy.y0);
+  teclas.ArrowLeft = dx < -JOY.zonaMorta;
+  teclas.ArrowRight = dx > JOY.zonaMorta;
+  posicionar(joyPino, joy.x0 + dx, joy.y0);
+});
+
+function fimDoToque(e) {
+  if (joy && e.pointerId === joy.id) soltarJoystick();
+  if (dedosPulo.delete(e.pointerId)) puloSegurado = dedosPulo.size > 0;
+}
+zonaToque.addEventListener('pointerup', fimDoToque);
+zonaToque.addEventListener('pointercancel', fimDoToque);
+zonaToque.addEventListener('lostpointercapture', fimDoToque);
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 
 function elementoFullscreenAtual() {
@@ -1820,7 +2079,9 @@ function atualizarMiguelito() {
         definirEstado('parado');
       }
     }
-    if ((teclas.ArrowUp || teclas[' ']) && noChao) {
+    if ((teclas.ArrowUp || teclas[' '] || pedidoPulo > 0) && noChao) {
+      puloDeToque = pedidoPulo > 0 && !teclas.ArrowUp && !teclas[' '];
+      pedidoPulo = 0;
       velocidadeY = forcaPulo;
       noChao = false;
       definirEstado('pulando');
@@ -1830,7 +2091,12 @@ function atualizarMiguelito() {
     xPersonagem += direcaoRecuo * 2;
   }
   limitarPersonagem();
+  if (pedidoPulo > 0) pedidoPulo--;
 
+  // Modo arrastar: soltar o dedo cedo encurta o pulo.
+  if (!noChao && !isTomandoDano && puloDeToque && !puloSegurado && velocidadeY < CFG.pulo.corte) {
+    velocidadeY = CFG.pulo.corte;
+  }
   pesPersonagem += velocidadeY;
   if (!noChao) {
     velocidadeY += gravidade;
@@ -2056,6 +2322,39 @@ function desenharMarcasDoBote() {
   }
 }
 
+function desenharAvisosNematoide() {
+  for (const a of avisosNematoide) {
+    const p = 1 - a.t / CFG.nematoide.aviso;
+    const pisca = 0.55 + 0.45 * Math.sin(passoGlobal * 0.4);
+    const borda = a.dir < 0 ? larguraJogo - 26 : 26;
+    const sentido = a.dir;   // a seta aponta para dentro da tela
+    const y = nivelDoChao - 70;
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 11;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 6;
+    for (let k = 0; k < 2; k++) {
+      const desliza = ((passoGlobal * 0.8 + k * 14) % 28) * sentido;
+      const x = borda + sentido * (k * 24) + desliza * 0.4;
+      ctx.strokeStyle = `rgba(255, 175, 90, ${(1 - k * 0.3) * pisca})`;
+      ctx.beginPath();
+      ctx.moveTo(x - sentido * 6, y - 26);
+      ctx.lineTo(x + sentido * 18, y);
+      ctx.lineTo(x - sentido * 6, y + 26);
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 0.25 + 0.35 * p;
+    ctx.fillStyle = '#ffaf5a';
+    ctx.beginPath();
+    ctx.ellipse(a.dir < 0 ? larguraJogo : 0, nivelDoChao - 6, 60, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
 function desenharPseudomonas() {
   if (!pseudomonas) return;
   const p = pseudomonas;
@@ -2267,6 +2566,7 @@ function desenhar() {
     desenharSombra(r.x, 40 + 40 * proximidade, 0.1 + 0.3 * proximidade);
   }
   desenharMarcasDoBote();
+  desenharAvisosNematoide();
 
   desenharPseudomonas();
   desenharNematoides();
@@ -2309,6 +2609,8 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) Som.suspender();
   else Som.retomar();
 });
+
+aplicarModoControle();
 
 let imagensCarregadas = 0;
 function checarCarregamento() {
