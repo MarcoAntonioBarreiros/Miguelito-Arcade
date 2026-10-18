@@ -270,6 +270,7 @@ canvas {
     <h1>Miguelito<span>Arcade</span></h1>
     <p>O <b>Bacillus</b> solta gotas roxas <i class="legenda-gota"></i> lá de cima. Pegue uma!</p>
     <p>Com a gota, encoste no <b>patógeno</b> para neutralizá-lo. Sem ela, ele te machuca.</p>
+    <p>A <b>Ralstonia</b> desce do teto atrás de você: desvie no último instante ou acerte-a com a gota.</p>
     <button class="btn-grande" id="btnComecar" type="button">Toque para começar</button>
     <p class="dica so-teclado">← → andar · ↑ ou espaço pular</p>
   </div>
@@ -291,7 +292,8 @@ canvas {
 //  registre o caminho em ARQUIVOS_DE_SOM (ex.: pulo: 'sons/pulo.mp3').
 //  Quando o arquivo carrega, ele substitui o som sintetizado.
 //  Chaves aceitas: pulo, pouso, gotaSolta, gota, neutralizar,
-//  dano, patogeno, inicio, fim, musica (loop), ambiente (loop).
+//  dano, patogeno, avisoRalstonia, ralstoniaSolo, inicio, fim,
+//  musica (loop), ambiente (loop).
 //  Use .mp3 ou .m4a para funcionar também no iPhone.
 // ============================================================
 const ARQUIVOS_DE_SOM = {
@@ -423,6 +425,8 @@ const Som = (() => {
     neutralizar: () => { chiado(0.28, 'bandpass', 1400, 280, 2.5, 0.45); tom(280, 55, 0.32, 'sine', 0.4); tom(1046, 1568, 0.18, 'sine', 0.08, 0.05); },
     dano: () => { tom(480, 140, 0.32, 'triangle', 0.35); chiado(0.15, 'lowpass', 900, 300, 1, 0.18); },
     patogeno: () => chiado(0.4, 'bandpass', 380, 620, 5, 0.12),
+    avisoRalstonia: () => { tom(620, 980, 0.12, 'square', 0.06); tom(620, 980, 0.12, 'square', 0.06, 0.18); },
+    ralstoniaSolo: () => { chiado(0.18, 'lowpass', 700, 180, 0.8, 0.22); tom(180, 90, 0.12, 'sine', 0.2); },
     inicio: () => { tom(523, 523, 0.14, 'sine', 0.18); tom(659, 659, 0.14, 'sine', 0.18, 0.1); tom(784, 784, 0.24, 'sine', 0.2, 0.2); },
     fim: () => { tom(392, 392, 0.22, 'triangle', 0.22); tom(330, 330, 0.22, 'triangle', 0.22, 0.2); tom(262, 220, 0.45, 'triangle', 0.24, 0.4); },
   };
@@ -583,6 +587,8 @@ const imgDano = new Image();
 imgDano.src = 'personagem_dano.png';
 const imgBacillus = new Image();
 imgBacillus.src = 'bacillus.png';
+const imgRalstonia = new Image();
+imgRalstonia.src = 'ralstonia.png';
 const configAndando = { colunas: 6, largura: 560, altura: 704, rodape: 81 };
 const configParado = { colunas: 6, largura: 589, altura: 740, rodape: 81 };
 // O sheet de pulo tem 6 quadros de 560 x 704 (3360 x 704 px).
@@ -591,9 +597,13 @@ const configPulando = { colunas: 6, largura: 560, altura: 704, rodape: 85 };
 const configInimigo = { colunas: 6, largura: 610, altura: 688, rodape: 42 };
 const configDano = { colunas: 7, largura: 416, altura: 740, rodape: 55 };
 const configBacillus = { colunas: 5, largura: 732, altura: 740 };
+// Ralstonia: 12 quadros de 320 x 400, cabeça para cima e flagelos para baixo.
+// centroX/centroY = centro do corpo no quadro (pivô de rotação e da colisão).
+const configRalstonia = { colunas: 12, largura: 320, altura: 400, centroX: 165, centroY: 150 };
 const escala = 0.35;
 const escalaInimigo = 0.20;
 const escalaBacillus = 0.25;
+const escalaRalstonia = 0.38;
 
 // ============================================================
 //  ESTADO
@@ -638,6 +648,31 @@ let patogenos = [];
 let particulas = [];
 let intensidadePulsoEscudo = 0;
 let pgpbs = [];
+
+// ---------- Ralstonia (protótipo) ----------
+// Ciclo: aviso no teto -> desce perseguindo o Miguelito com curva
+// limitada -> abaixo da ALTURA_TRAVA para de corrigir a rota (dá para
+// desviar no último instante) -> se não acertar, some no solo.
+// O sprite nunca gira: fica sempre em pé e só espelha na horizontal
+// conforme o lado para onde se move, como o Bacillus.
+const RALSTONIA = {
+  primeiraEm: 480,          // passos até a primeira (8 s)
+  intervaloMin: 420,        // 7 s
+  intervaloVar: 240,        // + até 4 s
+  duracaoAviso: 60,         // 1 s de aviso no teto
+  yAviso: 120,
+  velInicial: 2.2,
+  velMax: 4.5,
+  aceleracao: 0.03,
+  curvaMax: 0.035,          // radianos por passo
+  alturaTrava: 420,         // acima dos pés (~200 acima da cabeça): para de perseguir
+  raio: 30,
+};
+let ralstonias = [];
+let avisosRalstonia = [];
+let tempoProximaRalstonia = RALSTONIA.primeiraEm;
+let frameRalstoniaAtual = 0;
+let contadorFramesRalstonia = 0;
 
 function configDoEstado(nome) {
   if (nome === 'andando') return configAndando;
@@ -753,6 +788,109 @@ function spawnPatogeno() {
   Som.tocar('patogeno');
 }
 
+function criarAvisoRalstonia() {
+  const margem = 60;
+  avisosRalstonia.push({
+    x: margem + Math.random() * Math.max(1, larguraJogo - 2 * margem),
+    y: RALSTONIA.yAviso,
+    tempo: RALSTONIA.duracaoAviso,
+  });
+  Som.tocar('avisoRalstonia');
+}
+
+function lancarRalstonia(aviso) {
+  ralstonias.push({
+    x: aviso.x,              // centro do corpo
+    y: aviso.y,
+    vx: 0,
+    vy: RALSTONIA.velInicial,
+    vel: RALSTONIA.velInicial,
+    viradaParaEsquerda: false,
+  });
+}
+
+function gerarTerraNoSolo(x, y) {
+  for (let i = 0; i < 18; i++) {
+    particulas.push({
+      x: x + (Math.random() - 0.5) * 30,
+      y,
+      vx: (Math.random() - 0.5) * 6,
+      vy: -Math.random() * 6 - 1,
+      tamanho: Math.random() * 5 + 2,
+      cor: i % 3 === 0 ? '#e08a3c' : '#6b4a2f',
+      vida: 1,
+      taxaMorte: Math.random() * 0.03 + 0.03,
+      peso: 0.4
+    });
+  }
+}
+
+function atualizarRalstonias(alvoX, alvoY, hitbox) {
+  if (ralstonias.length === 0 && avisosRalstonia.length === 0) {
+    tempoProximaRalstonia--;
+    if (tempoProximaRalstonia <= 0) {
+      criarAvisoRalstonia();
+      tempoProximaRalstonia = RALSTONIA.intervaloMin + Math.random() * RALSTONIA.intervaloVar;
+    }
+  }
+  for (let i = avisosRalstonia.length - 1; i >= 0; i--) {
+    const aviso = avisosRalstonia[i];
+    aviso.tempo--;
+    if (aviso.tempo <= 0) {
+      lancarRalstonia(aviso);
+      avisosRalstonia.splice(i, 1);
+    }
+  }
+
+  const linhaTrava = nivelDoChao - RALSTONIA.alturaTrava;
+  for (let i = ralstonias.length - 1; i >= 0; i--) {
+    const r = ralstonias[i];
+    r.vel = Math.min(RALSTONIA.velMax, r.vel + RALSTONIA.aceleracao);
+    let angulo = Math.atan2(r.vy, r.vx);
+    if (r.y < linhaTrava) {
+      // Persegue com curva limitada.
+      const desejado = Math.atan2(alvoY - r.y, alvoX - r.x);
+      let delta = desejado - angulo;
+      while (delta > Math.PI) delta -= Math.PI * 2;
+      while (delta < -Math.PI) delta += Math.PI * 2;
+      angulo += Math.max(-RALSTONIA.curvaMax, Math.min(RALSTONIA.curvaMax, delta));
+      // Nunca sobe: a descida é sempre para baixo.
+      angulo = Math.max(0.35, Math.min(Math.PI - 0.35, angulo));
+    }
+    r.vx = Math.cos(angulo) * r.vel;
+    r.vy = Math.sin(angulo) * r.vel;
+    r.x += r.vx;
+    r.y += r.vy;
+    if (Math.abs(r.vx) > 0.4) r.viradaParaEsquerda = r.vx < 0;
+
+    // Colisão círculo (Ralstonia) x retângulo (Miguelito).
+    const px = Math.max(hitbox.x, Math.min(r.x, hitbox.x + hitbox.w));
+    const py = Math.max(hitbox.y, Math.min(r.y, hitbox.y + hitbox.h));
+    const tocou = (r.x - px) ** 2 + (r.y - py) ** 2 < RALSTONIA.raio * RALSTONIA.raio;
+    if (tocou && !isTomandoDano && !invulneravel) {
+      ralstonias.splice(i, 1);
+      if (miguelitoCarregadoRoxo) {
+        miguelitoCarregadoRoxo = false;
+        intensidadePulsoEscudo = 1;
+        pontos++;
+        gerarExplosao(r.x, r.y, '#e08a3c');
+        Som.tocar('neutralizar');
+      } else {
+        sofrerDano(r.x);
+      }
+      continue;
+    }
+
+    // Errou: chega ao solo e desaparece.
+    const baseY = r.y + (configRalstonia.altura - configRalstonia.centroY) * escalaRalstonia * 0.75;
+    if (baseY >= nivelDoChao || r.x < -80 || r.x > larguraJogo + 80) {
+      gerarTerraNoSolo(r.x, Math.min(baseY, nivelDoChao));
+      ralstonias.splice(i, 1);
+      Som.tocar('ralstoniaSolo');
+    }
+  }
+}
+
 function gerarExplosao(x, y, cor) {
   for (let i = 0; i < 30; i++) {
     particulas.push({
@@ -849,6 +987,9 @@ function zerarPartida() {
   gotas = [];
   patogenos = [];
   particulas = [];
+  ralstonias = [];
+  avisosRalstonia = [];
+  tempoProximaRalstonia = RALSTONIA.primeiraEm;
   miguelitoCarregadoRoxo = false;
   intensidadePulsoEscudo = 0;
   isTomandoDano = false;
@@ -1017,6 +1158,11 @@ function atualizarCenario() {
   if (contadorFramesInimigo >= velocidadeAnimacaoInimigo) {
     frameInimigoAtual = (frameInimigoAtual + 1) % configInimigo.colunas;
     contadorFramesInimigo = 0;
+  }
+  contadorFramesRalstonia++;
+  if (contadorFramesRalstonia >= 7) {
+    frameRalstoniaAtual = (frameRalstoniaAtual + 1) % configRalstonia.colunas;
+    contadorFramesRalstonia = 0;
   }
   if (intensidadePulsoEscudo > 0) {
     intensidadePulsoEscudo = Math.max(0, intensidadePulsoEscudo - 0.05);
@@ -1214,19 +1360,32 @@ function atualizar() {
         Som.tocar('neutralizar');
         continue;
       } else {
-        vidas = Math.max(0, vidas - 1);
-        isTomandoDano = true;
-        invulneravel = true;
-        tempoInvulneravel = duracaoInvulnerabilidade;
-        direcaoRecuo = (mHitboxX + mHitboxWidth / 2) < (pHitboxX + pHitboxWidth / 2) ? -1 : 1;
-        definirEstado('dano');
-        velocidadeY = -12;
-        noChao = false;
-        Som.tocar('dano');
+        sofrerDano(pHitboxX + pHitboxWidth / 2);
       }
     }
     if (pat.x + pat.largura < -60) patogenos.splice(i, 1);
   }
+
+  atualizarRalstonias(
+    mHitboxX + mHitboxWidth / 2,
+    mHitboxY + mHitboxHeight * 0.35,
+    { x: mHitboxX, y: mHitboxY, w: mHitboxWidth, h: mHitboxHeight }
+  );
+}
+
+// Dano comum a todos os inimigos; recua para longe de quem causou.
+function sofrerDano(origemX) {
+  const larguraAtual = configDoEstadoAtual().largura * escala;
+  const centroMiguelito = xPersonagem + larguraAtual / 2;
+  vidas = Math.max(0, vidas - 1);
+  isTomandoDano = true;
+  invulneravel = true;
+  tempoInvulneravel = duracaoInvulnerabilidade;
+  direcaoRecuo = centroMiguelito < origemX ? -1 : 1;
+  definirEstado('dano');
+  velocidadeY = -12;
+  noChao = false;
+  Som.tocar('dano');
 }
 
 // ============================================================
@@ -1350,6 +1509,40 @@ function desenhar() {
     ctx.restore();
   }
 
+  // Aviso da Ralstonia: gota alaranjada que pulsa e cresce no teto.
+  for (const aviso of avisosRalstonia) {
+    const progresso = 1 - aviso.tempo / RALSTONIA.duracaoAviso;
+    const pulso = 0.5 + 0.5 * Math.sin(progresso * Math.PI * 6);
+    const raioBrilho = 34 + pulso * 16;
+    const brilho = ctx.createRadialGradient(aviso.x, aviso.y, 2, aviso.x, aviso.y, raioBrilho);
+    brilho.addColorStop(0, `rgba(255, 170, 80, ${0.55 + 0.35 * pulso})`);
+    brilho.addColorStop(1, 'rgba(224, 120, 40, 0)');
+    ctx.fillStyle = brilho;
+    ctx.beginPath();
+    ctx.arc(aviso.x, aviso.y, raioBrilho, 0, Math.PI * 2);
+    ctx.fill();
+    const raioGota = 6 + progresso * 10;
+    ctx.fillStyle = '#e08a3c';
+    ctx.beginPath();
+    ctx.arc(aviso.x, aviso.y, raioGota, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 230, 200, 0.7)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+
+  for (const r of ralstonias) {
+    const larguraR = configRalstonia.largura * escalaRalstonia;
+    const alturaR = configRalstonia.altura * escalaRalstonia;
+    const recorteR = frameRalstoniaAtual * configRalstonia.largura;
+    ctx.save();
+    ctx.translate(r.x, r.y);
+    if (r.viradaParaEsquerda) ctx.scale(-1, 1);
+    ctx.drawImage(imgRalstonia, recorteR, 0, configRalstonia.largura, configRalstonia.altura,
+      -configRalstonia.centroX * escalaRalstonia, -configRalstonia.centroY * escalaRalstonia, larguraR, alturaR);
+    ctx.restore();
+  }
+
   ctx.save();
   const imagemAtual = imagemDoEstado(estado);
   const configAtual = configDoEstadoAtual();
@@ -1424,7 +1617,7 @@ document.addEventListener('visibilitychange', () => {
 let imagensCarregadas = 0;
 function checarCarregamento() {
   imagensCarregadas++;
-  if (imagensCarregadas === 7) {
+  if (imagensCarregadas === 8) {
     atualizarViewport();
     zerarPartida();
     requestAnimationFrame(loopDoJogo);
@@ -1437,6 +1630,7 @@ imgPulando.onload = checarCarregamento;
 imgInimigo.onload = checarCarregamento;
 imgDano.onload = checarCarregamento;
 imgBacillus.onload = checarCarregamento;
+imgRalstonia.onload = checarCarregamento;
 </script>
 </body>
 </html>
