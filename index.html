@@ -655,6 +655,11 @@ const CFG = {
     vida: 420,               // 7 s no solo antes de afundar
     raioPulso: 200,
   },
+  // Pulo e caixas de colisão (frações do quadro do sprite).
+  // Medido: correndo contra o nematoide, a janela para soltar o pulo
+  // passou de ~0,17 s para ~0,42 s com estes valores.
+  pulo: { forca: -17, gravidade: 0.65 },
+  colisao: { miguelitoLargura: 0.30, miguelitoAltura: 0.85, nematoideLargura: 0.38, nematoideAltura: 0.50 },
   pausaEntreOndas: 170,
   ondas: [
     {
@@ -843,8 +848,8 @@ let framePseudomonasAtual = 0;
 let estado = 'parado'; // 'parado' | 'andando' | 'pulando' | 'aterrissando' | 'dano'
 let viradoParaEsquerda = false;
 let velocidadeY = 0;
-const forcaPulo = -18;
-const gravidade = 0.8;
+let forcaPulo = CFG.pulo.forca;
+let gravidade = CFG.pulo.gravidade;
 let noChao = true;
 let isTomandoDano = false;
 let direcaoRecuo = -1;
@@ -909,8 +914,8 @@ function hitboxMiguelito() {
   const cfg = configDoEstadoAtual();
   const w = cfg.largura * escala;
   const h = cfg.altura * escala;
-  const hw = w * 0.4;
-  const hh = h * 0.85;
+  const hw = w * CFG.colisao.miguelitoLargura;
+  const hh = h * CFG.colisao.miguelitoAltura;
   const top = topoPersonagem(cfg);
   return { x: xPersonagem + (w - hw) / 2, y: top + (h - hh), w: hw, h: hh };
 }
@@ -1156,8 +1161,8 @@ function atualizarNematoides(hb) {
     const pat = patogenos[i];
     pat.t++;
     pat.x += pat.dir * pat.vel * (0.45 + 0.55 * ondulacaoNematoide(pat));
-    const pw = pat.largura * 0.5;
-    const ph = pat.altura * 0.55;
+    const pw = pat.largura * CFG.colisao.nematoideLargura;
+    const ph = pat.altura * CFG.colisao.nematoideAltura;
     const caixa = { x: pat.x + (pat.largura - pw) / 2, y: pat.y + (pat.altura - ph), w: pw, h: ph };
     if (!isTomandoDano && !invulneravel && caixasSeTocam(hb, caixa)) {
       if (miguelitoCarregadoRoxo) {
