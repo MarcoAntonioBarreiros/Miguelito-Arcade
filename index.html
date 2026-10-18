@@ -52,15 +52,80 @@ canvas {
   top: 0;
   left: 0;
   right: 0;
-  padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 10px max(12px, env(safe-area-inset-left));
+  padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) 14px max(12px, env(safe-area-inset-left));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 30;
+  pointer-events: none;
+  background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0));
+}
+.hud-linha {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  z-index: 30;
-  pointer-events: none;
-  background: linear-gradient(rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0));
 }
+.planta { display: flex; align-items: center; gap: 6px; }
+.planta svg { width: 22px; height: 22px; }
+.barra-planta {
+  width: 140px;
+  height: 12px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  overflow: hidden;
+}
+.preenchimento-planta {
+  height: 100%;
+  width: 100%;
+  border-radius: 6px;
+  background: hsl(100, 70%, 48%);
+  transition: width 260ms ease, background 400ms ease;
+}
+.barra-planta.perdeu { animation: perdeu 420ms ease; }
+.barra-planta.recuperou { animation: recuperou 600ms ease; }
+@keyframes perdeu {
+  0%, 100% { transform: translateX(0); border-color: rgba(255, 255, 255, 0.3); }
+  25% { transform: translateX(-4px); border-color: #ff9b5a; }
+  50% { transform: translateX(4px); border-color: #ff9b5a; }
+}
+@keyframes recuperou {
+  50% { box-shadow: 0 0 10px 2px rgba(150, 230, 110, 0.8); }
+}
+.onda-atual {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+.banner-onda {
+  position: absolute;
+  left: 50%;
+  top: 26%;
+  width: min(330px, calc(100% - 40px));
+  transform: translate(-50%, -8px);
+  z-index: 25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  text-align: center;
+  background: rgba(22, 15, 10, 0.78);
+  border: 1px solid rgba(210, 180, 222, 0.3);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 260ms ease, transform 260ms ease;
+}
+.banner-onda.visivel { opacity: 1; transform: translate(-50%, 0); }
+.banner-onda strong { font-size: 30px; font-weight: 900; }
+.banner-onda span { font-size: 15px; line-height: 1.35; color: var(--texto-suave); }
+.banner-onda span:empty { display: none; }
 .vidas { display: flex; gap: 4px; }
 .vidas svg { width: 26px; height: 26px; transition: transform 160ms ease, opacity 160ms ease; }
 .vidas svg.perdida { opacity: 0.25; transform: scale(0.8); }
@@ -98,6 +163,17 @@ canvas {
   border-color: #f0e2f7;
   background: radial-gradient(circle at 38% 35%, #f3e8f8 0 15%, var(--roxo) 55%, #6c3483 100%);
   box-shadow: 0 0 14px 3px rgba(155, 89, 182, 0.85);
+}
+.carga.pseudo {
+  display: none;
+  border-color: rgba(200, 242, 90, 0.45);
+  background: rgba(20, 45, 40, 0.4);
+}
+.carga.pseudo.disponivel { display: block; }
+.carga.pseudo.cheia {
+  border-color: #f3ffd0;
+  background: radial-gradient(circle at 38% 35%, #fbffe0 0 15%, #c8f25a 50%, #2fa894 100%);
+  box-shadow: 0 0 14px 3px rgba(200, 242, 90, 0.8);
 }
 .btn-hud {
   width: 38px;
@@ -245,16 +321,33 @@ canvas {
 <canvas id="jogoCanvas" width="960" height="1080" aria-label="Jogo Miguelito Arcade"></canvas>
 
 <div class="hud" id="hud">
-  <div class="vidas" id="vidas" aria-label="Vidas"></div>
-  <div class="placar" id="placar" aria-live="polite">
-    <strong id="pontos">0</strong>
-    <small>neutralizados</small>
+  <div class="hud-linha">
+    <div class="vidas" id="vidas" aria-label="Vidas"></div>
+    <div class="placar" id="placar" aria-live="polite">
+      <strong id="pontos">0</strong>
+      <small>neutralizados</small>
+    </div>
+    <div class="hud-direita">
+      <div class="carga" id="carga" title="Gota do Bacillus (contra nematoide)" aria-label="Sem gota do Bacillus"></div>
+      <div class="carga pseudo" id="cargaPseudo" title="Pulso da Pseudomonas (contra Ralstonia)" aria-label="Sem pulso da Pseudomonas"></div>
+      <button id="btnSom" class="btn-hud" type="button" aria-label="Desligar som" title="Som"></button>
+      <button id="btnFullscreen" class="btn-hud" type="button" aria-label="Alternar tela cheia" title="Tela cheia">⛶</button>
+    </div>
   </div>
-  <div class="hud-direita">
-    <div class="carga" id="carga" title="Carga do Bacillus" aria-label="Sem carga"></div>
-    <button id="btnSom" class="btn-hud" type="button" aria-label="Desligar som" title="Som"></button>
-    <button id="btnFullscreen" class="btn-hud" type="button" aria-label="Alternar tela cheia" title="Tela cheia">⛶</button>
+  <div class="hud-linha hud-linha2">
+    <div class="planta" title="Saúde da planta">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21v-8" stroke="#8fd16a" stroke-width="2.2" stroke-linecap="round" fill="none"/><path d="M12 14c-4.5 0-7-2.6-7-7 4.4 0 7 2.6 7 7z" fill="#7cc35a"/><path d="M12 12c0-4.2 2.4-6.7 7-6.7 0 4.3-2.6 6.7-7 6.7z" fill="#9ad874"/></svg>
+      <div class="barra-planta" id="barraPlanta" role="meter" aria-label="Saúde da planta" aria-valuemin="0" aria-valuemax="10" aria-valuenow="10">
+        <div class="preenchimento-planta" id="preenchimentoPlanta"></div>
+      </div>
+    </div>
+    <div class="onda-atual" id="ondaAtual"></div>
   </div>
+</div>
+
+<div class="banner-onda" id="bannerOnda" aria-live="polite">
+  <strong id="bannerTitulo"></strong>
+  <span id="bannerDica"></span>
 </div>
 
 <div class="faixa-controles" id="faixaControles" aria-label="Controles do jogo">
@@ -268,9 +361,9 @@ canvas {
 <div class="tela visivel" id="telaInicio">
   <div class="cartao">
     <h1>Miguelito<span>Arcade</span></h1>
-    <p>O <b>Bacillus</b> solta gotas roxas <i class="legenda-gota"></i> lá de cima. Pegue uma!</p>
-    <p>Com a gota, encoste no <b>patógeno</b> para neutralizá-lo. Sem ela, ele te machuca.</p>
-    <p>A <b>Ralstonia</b> desce do teto atrás de você: desvie no último instante ou acerte-a com a gota.</p>
+    <p>Proteja o feijão! Patógeno que escapa faz a <b>planta murchar</b>.</p>
+    <p>Pegue a gota roxa do <b>Bacillus</b> <i class="legenda-gota"></i> e encoste no <b>nematoide</b> para neutralizá-lo.</p>
+    <p>Sem a gota, o nematoide te machuca: pule por cima dele.</p>
     <button class="btn-grande" id="btnComecar" type="button">Toque para começar</button>
     <p class="dica so-teclado">← → andar · ↑ ou espaço pular</p>
   </div>
@@ -278,8 +371,8 @@ canvas {
 
 <div class="tela" id="telaFim">
   <div class="cartao">
-    <h1>Fim de jogo</h1>
-    <p class="destaque">Você neutralizou <strong id="pontosFinais">0</strong> <span id="palavraPatogenos">patógenos</span>.</p>
+    <h1 id="tituloFim">Fim de jogo</h1>
+    <p class="destaque">Você chegou à onda <strong id="ondaFinal">1</strong> e neutralizou <strong id="pontosFinais">0</strong> <span id="palavraPatogenos">patógenos</span>.</p>
     <button class="btn-grande" id="btnRecomecar" type="button">Jogar de novo</button>
   </div>
 </div>
@@ -292,8 +385,9 @@ canvas {
 //  registre o caminho em ARQUIVOS_DE_SOM (ex.: pulo: 'sons/pulo.mp3').
 //  Quando o arquivo carrega, ele substitui o som sintetizado.
 //  Chaves aceitas: pulo, pouso, gotaSolta, gota, neutralizar,
-//  dano, patogeno, avisoRalstonia, ralstoniaSolo, inicio, fim,
-//  musica (loop), ambiente (loop).
+//  dano, patogeno, ralstoniaSurge, ralstoniaBote, colonia,
+//  pseudomonasBrota, pseudomonasPega, pulso, inibida,
+//  plantaPerde, inicio, fim, musica (loop), ambiente (loop).
 //  Use .mp3 ou .m4a para funcionar também no iPhone.
 // ============================================================
 const ARQUIVOS_DE_SOM = {
@@ -425,8 +519,14 @@ const Som = (() => {
     neutralizar: () => { chiado(0.28, 'bandpass', 1400, 280, 2.5, 0.45); tom(280, 55, 0.32, 'sine', 0.4); tom(1046, 1568, 0.18, 'sine', 0.08, 0.05); },
     dano: () => { tom(480, 140, 0.32, 'triangle', 0.35); chiado(0.15, 'lowpass', 900, 300, 1, 0.18); },
     patogeno: () => chiado(0.4, 'bandpass', 380, 620, 5, 0.12),
-    avisoRalstonia: () => { tom(620, 980, 0.12, 'square', 0.06); tom(620, 980, 0.12, 'square', 0.06, 0.18); },
-    ralstoniaSolo: () => { chiado(0.18, 'lowpass', 700, 180, 0.8, 0.22); tom(180, 90, 0.12, 'sine', 0.2); },
+    ralstoniaSurge: () => { chiado(0.9, 'bandpass', 180, 620, 3, 0.14); tom(110, 165, 0.9, 'sine', 0.08); },
+    ralstoniaBote: () => { tom(240, 95, 0.4, 'sawtooth', 0.09); chiado(0.3, 'bandpass', 1000, 380, 2, 0.16); },
+    colonia: () => { chiado(0.26, 'lowpass', 900, 200, 4, 0.26); tom(160, 80, 0.22, 'sine', 0.2); },
+    pseudomonasBrota: () => { tom(440, 660, 0.25, 'sine', 0.1); tom(660, 990, 0.25, 'sine', 0.08, 0.08); },
+    pseudomonasPega: () => { tom(990, 990, 0.15, 'sine', 0.15); tom(1320, 1320, 0.2, 'sine', 0.12, 0.05); tom(1760, 1760, 0.25, 'sine', 0.09, 0.1); },
+    pulso: () => { chiado(0.5, 'bandpass', 600, 3000, 1.5, 0.35); tom(330, 880, 0.3, 'triangle', 0.15); },
+    inibida: () => tom(1500, 600, 0.4, 'sine', 0.12),
+    plantaPerde: () => { tom(200, 110, 0.35, 'triangle', 0.25); tom(150, 80, 0.35, 'sine', 0.15, 0.05); },
     inicio: () => { tom(523, 523, 0.14, 'sine', 0.18); tom(659, 659, 0.14, 'sine', 0.18, 0.1); tom(784, 784, 0.24, 'sine', 0.2, 0.2); },
     fim: () => { tom(392, 392, 0.22, 'triangle', 0.22); tom(330, 330, 0.22, 'triangle', 0.22, 0.2); tom(262, 220, 0.45, 'triangle', 0.24, 0.4); },
   };
@@ -522,6 +622,72 @@ const Som = (() => {
 })();
 
 // ============================================================
+//  CONFIGURAÇÃO DO JOGO
+//  Todos os números de equilíbrio ficam aqui. Tempos em passos
+//  de 1/60 s (60 = 1 segundo).
+// ============================================================
+const CFG = {
+  planta: {
+    max: 10,
+    perdaNematoide: 1,       // nematoide que escapa
+    drenoColonia: 240,       // cada colônia tira 1 a cada 4 s
+    regen: 360,              // sem colônias, recupera 1 a cada 6 s
+  },
+  bacillus: { gotaMin: 150, gotaVar: 90 },
+  nematoide: { velMin: 2.0, velVar: 1.6 },
+  ralstonia: {
+    surge: 90,               // ato 1: 1,5 s crescendo ao fundo (não fere)
+    rondaMin: 200,           // ato 2: 3,3 a 5 s rondando
+    rondaVar: 100,
+    preparo: 32,             // ato 3a: ~0,5 s de boca aberta tremendo
+    bote: 44,                // ato 3b: ~0,7 s de mergulho em arco
+    alturaRonda: 430,        // centro da Ralstonia acima dos pés no fim da ronda
+    seguir: 0.010,           // quão rápido ela acompanha o Miguelito na ronda
+    velMaxRonda: 2.0,
+    amplitude: 70,           // sinuosidade lateral
+    periodo: 110,
+    raio: 30,
+  },
+  pseudomonas: {
+    primeira: 60,            // passos após o início da onda 2
+    intervaloMin: 300,       // 5 a 7 s depois de usada ou de sumir
+    intervaloVar: 120,
+    vida: 420,               // 7 s no solo antes de afundar
+    raioPulso: 200,
+  },
+  pausaEntreOndas: 170,
+  ondas: [
+    {
+      nematoides: 6, intervaloNematoide: 240, ralstonias: 0, ambosLados: false, velNematoide: 1,
+      titulo: 'Onda 1', dica: 'Pegue a gota roxa do Bacillus e encoste no nematoide.'
+    },
+    {
+      nematoides: 5, intervaloNematoide: 300, ralstonias: 3, intervaloRalstonia: 480, primeiraRalstonia: 170,
+      ambosLados: false, velNematoide: 1, pseudomonas: true,
+      titulo: 'Onda 2', dica: 'A Ralstonia chegou! Pegue a Pseudomonas que brota do solo: o pulso dela inibe a Ralstonia.'
+    },
+  ],
+};
+
+// Da onda 3 em diante, as ondas crescem aos poucos.
+function configDaOnda(n) {
+  if (n <= CFG.ondas.length) return CFG.ondas[n - 1];
+  const k = n - CFG.ondas.length;
+  return {
+    nematoides: 5 + k,
+    intervaloNematoide: Math.max(150, 290 - 20 * k),
+    ralstonias: 2 + k,
+    intervaloRalstonia: Math.max(300, 460 - 30 * k),
+    primeiraRalstonia: 120,
+    ambosLados: true,
+    velNematoide: Math.min(1.6, 1 + 0.08 * k),
+    pseudomonas: true,
+    titulo: `Onda ${n}`,
+    dica: k === 1 ? 'Agora os nematoides vêm dos dois lados!' : '',
+  };
+}
+
+// ============================================================
 //  TELA E MUNDO
 // ============================================================
 const canvas = document.getElementById('jogoCanvas');
@@ -568,27 +734,30 @@ function prepararContexto() {
   ctx.imageSmoothingEnabled = true;
 }
 
+const limitar = (v, min, max) => Math.max(min, Math.min(max, v));
+const suave = (p) => p * p * (3 - 2 * p);
+
 // ============================================================
 //  IMAGENS E SPRITE SHEETS
 //  rodape = faixa transparente abaixo dos pés no quadro (px da
 //  imagem). Serve para apoiar os pés exatamente na linha do chão.
 // ============================================================
-const imgFundo = new Image();
-imgFundo.src = 'cenario.jpeg';
-const imgAndando = new Image();
-imgAndando.src = 'personagem_sprite.png';
-const imgParado = new Image();
-imgParado.src = 'miguelito_idle.png';
-const imgPulando = new Image();
-imgPulando.src = 'personagem_jumping.png';
-const imgInimigo = new Image();
-imgInimigo.src = 'wormstanding.png';
-const imgDano = new Image();
-imgDano.src = 'personagem_dano.png';
-const imgBacillus = new Image();
-imgBacillus.src = 'bacillus.png';
-const imgRalstonia = new Image();
-imgRalstonia.src = 'ralstonia.png';
+function carregarImagem(src) {
+  const img = new Image();
+  img.src = src;
+  return img;
+}
+const imgFundo = carregarImagem('cenario.jpeg');
+const imgAndando = carregarImagem('personagem_sprite.png');
+const imgParado = carregarImagem('miguelito_idle.png');
+const imgPulando = carregarImagem('personagem_jumping.png');
+const imgInimigo = carregarImagem('wormstanding.png');
+const imgDano = carregarImagem('personagem_dano.png');
+const imgBacillus = carregarImagem('bacillus.png');
+const imgRalstonia = carregarImagem('ralstonia.png');
+const imgPseudomonas = carregarImagem('pseudomonas.png');
+const TODAS_AS_IMAGENS = [imgFundo, imgAndando, imgParado, imgPulando, imgInimigo, imgDano, imgBacillus, imgRalstonia, imgPseudomonas];
+
 const configAndando = { colunas: 6, largura: 560, altura: 704, rodape: 81 };
 const configParado = { colunas: 6, largura: 589, altura: 740, rodape: 81 };
 // O sheet de pulo tem 6 quadros de 560 x 704 (3360 x 704 px).
@@ -597,23 +766,70 @@ const configPulando = { colunas: 6, largura: 560, altura: 704, rodape: 85 };
 const configInimigo = { colunas: 6, largura: 610, altura: 688, rodape: 42 };
 const configDano = { colunas: 7, largura: 416, altura: 740, rodape: 55 };
 const configBacillus = { colunas: 5, largura: 732, altura: 740 };
-// Ralstonia: 12 quadros de 320 x 400, cabeça para cima e flagelos para baixo.
-// centroX/centroY = centro do corpo no quadro (pivô de rotação e da colisão).
+// Ralstonia: 12 quadros de 320 x 400, cabeça para cima. Nunca gira.
 const configRalstonia = { colunas: 12, largura: 320, altura: 400, centroX: 165, centroY: 150 };
+// Sequências de quadros: boca fechada na ronda, escancarada no bote.
+const SEQ_RONDA = [0, 1, 2, 9, 10, 11, 10, 9, 2, 1];
+const SEQ_PREPARO = [4, 5, 6, 7, 6, 7, 6, 7];
+const SEQ_BOTE = [7, 6];
+// Pseudomonas: 24 quadros de 320 x 400.
+const configPseudomonas = { colunas: 24, largura: 320, altura: 400, rodape: 28 };
 const escala = 0.35;
 const escalaInimigo = 0.20;
 const escalaBacillus = 0.25;
 const escalaRalstonia = 0.38;
+const escalaPseudomonas = 0.32;
+
+// Versões derivadas, criadas uma vez no carregamento (sem ler pixels,
+// então funcionam também abrindo o arquivo direto do disco).
+let fundoMurcho = null;
+let ralstoniaPalida = null;
+
+function criarFundoMurcho() {
+  const fator = Math.min(1, 1440 / imgFundo.naturalHeight);
+  const c = document.createElement('canvas');
+  c.width = Math.round(imgFundo.naturalWidth * fator);
+  c.height = Math.round(imgFundo.naturalHeight * fator);
+  const g = c.getContext('2d');
+  g.drawImage(imgFundo, 0, 0, c.width, c.height);
+  g.globalCompositeOperation = 'saturation';
+  g.fillStyle = 'rgba(128, 128, 128, 0.8)';
+  g.fillRect(0, 0, c.width, c.height);
+  g.globalCompositeOperation = 'multiply';
+  g.fillStyle = 'rgba(205, 160, 85, 0.6)';
+  g.fillRect(0, 0, c.width, c.height);
+  return c;
+}
+
+function criarVersaoPalida(img) {
+  const c = document.createElement('canvas');
+  c.width = img.naturalWidth;
+  c.height = img.naturalHeight;
+  const g = c.getContext('2d');
+  g.drawImage(img, 0, 0);
+  g.globalCompositeOperation = 'saturation';
+  g.fillStyle = '#808080';
+  g.fillRect(0, 0, c.width, c.height);
+  g.globalCompositeOperation = 'destination-in';
+  g.drawImage(img, 0, 0);
+  g.globalCompositeOperation = 'source-atop';
+  g.fillStyle = 'rgba(225, 240, 215, 0.45)';
+  g.fillRect(0, 0, c.width, c.height);
+  return c;
+}
 
 // ============================================================
 //  ESTADO
 // ============================================================
 const VIDAS_INICIAIS = 3;
-const INTERVALO_PATOGENOS = 240; // passos de 1/60 s (4 s)
 let estadoJogo = 'inicio'; // 'inicio' | 'jogando' | 'fim'
+let motivoFim = null;      // 'vidas' | 'planta'
 let vidas = VIDAS_INICIAIS;
 let pontos = 0;
-let tempoProximoPatogeno = INTERVALO_PATOGENOS;
+let planta = CFG.planta.max;
+let tempoRegen = CFG.planta.regen;
+let murchaVisual = 0;
+let onda = null;
 
 let xPersonagem = 200;      // canto esquerdo do quadro, em coordenadas da área jogável
 let pesPersonagem = 0;      // linha dos pés (y)
@@ -623,6 +839,7 @@ let frameInimigoAtual = 0;
 let contadorFramesInimigo = 0;
 const velocidadeAnimacaoInimigo = 5;
 let frameBacillusAtual = 0;
+let framePseudomonasAtual = 0;
 let estado = 'parado'; // 'parado' | 'andando' | 'pulando' | 'aterrissando' | 'dano'
 let viradoParaEsquerda = false;
 let velocidadeY = 0;
@@ -642,37 +859,21 @@ const velocidadeAnimacaoBacillus = 15;
 let contadorFramesParado = 0;
 const velocidadeAnimacaoParado = 12;
 let tempoPausaIdle = 0;
+let passoGlobal = 0;
+
 let gotas = [];
-let miguelitoCarregadoRoxo = false;
-let patogenos = [];
+let miguelitoCarregadoRoxo = false;   // carga do Bacillus (contra nematoide)
+let temHalo = false;                  // carga da Pseudomonas (contra Ralstonia)
+let patogenos = [];                   // nematoides
+let ralstonias = [];
+let colonias = [];
+let pseudomonas = null;
+let tempoProximaPseudomonas = 0;
+let pulsos = [];
 let particulas = [];
+let textos = [];
 let intensidadePulsoEscudo = 0;
 let pgpbs = [];
-
-// ---------- Ralstonia (protótipo) ----------
-// Ciclo: aviso no teto -> desce perseguindo o Miguelito com curva
-// limitada -> abaixo da ALTURA_TRAVA para de corrigir a rota (dá para
-// desviar no último instante) -> se não acertar, some no solo.
-// O sprite nunca gira: fica sempre em pé e só espelha na horizontal
-// conforme o lado para onde se move, como o Bacillus.
-const RALSTONIA = {
-  primeiraEm: 480,          // passos até a primeira (8 s)
-  intervaloMin: 420,        // 7 s
-  intervaloVar: 240,        // + até 4 s
-  duracaoAviso: 60,         // 1 s de aviso no teto
-  yAviso: 120,
-  velInicial: 2.2,
-  velMax: 4.5,
-  aceleracao: 0.03,
-  curvaMax: 0.035,          // radianos por passo
-  alturaTrava: 420,         // acima dos pés (~200 acima da cabeça): para de perseguir
-  raio: 30,
-};
-let ralstonias = [];
-let avisosRalstonia = [];
-let tempoProximaRalstonia = RALSTONIA.primeiraEm;
-let frameRalstoniaAtual = 0;
-let contadorFramesRalstonia = 0;
 
 function configDoEstado(nome) {
   if (nome === 'andando') return configAndando;
@@ -689,7 +890,7 @@ function imagemDoEstado(nome) {
 }
 
 // Troca de estado sempre reinicia a animação: evita pedir um quadro
-// que não existe no sheet novo (o Miguelito sumia depois do dano).
+// que não existe no sheet novo.
 function definirEstado(novo) {
   if (estado === novo) return;
   estado = novo;
@@ -699,9 +900,34 @@ function definirEstado(novo) {
   tempoPausaIdle = 0;
 }
 
-// Topo do quadro do Miguelito, a partir da linha dos pés.
 function topoPersonagem(config) {
   return pesPersonagem - (config.altura - config.rodape) * escala;
+}
+
+// Caixa de colisão do Miguelito no passo atual.
+function hitboxMiguelito() {
+  const cfg = configDoEstadoAtual();
+  const w = cfg.largura * escala;
+  const h = cfg.altura * escala;
+  const hw = w * 0.4;
+  const hh = h * 0.85;
+  const top = topoPersonagem(cfg);
+  return { x: xPersonagem + (w - hw) / 2, y: top + (h - hh), w: hw, h: hh };
+}
+
+function centroMiguelito() {
+  const hb = hitboxMiguelito();
+  return { x: hb.x + hb.w / 2, y: hb.y + hb.h / 2 };
+}
+
+function circuloTocaCaixa(cx, cy, r, caixa) {
+  const px = limitar(cx, caixa.x, caixa.x + caixa.w);
+  const py = limitar(cy, caixa.y, caixa.y + caixa.h);
+  return (cx - px) ** 2 + (cy - py) ** 2 < r * r;
+}
+
+function caixasSeTocam(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
 function limitarBacillusAoMundo(bac) {
@@ -730,7 +956,6 @@ function limitarPersonagem() {
 
 function atualizarViewport() {
   redimensionarCanvas();
-  // Linha dos pés no piso do cenário (mesma altura visual de antes).
   nivelDoChao = ALTURA_MUNDO - 88;
   limitarPersonagem();
   if (noChao) pesPersonagem = nivelDoChao;
@@ -764,138 +989,13 @@ function inicializarBacillus() {
   for (const bac of pgpbs) limitarBacillusAoMundo(bac);
 }
 
-function spawnGotaRoxaDoBacillus(origemX, origemY) {
-  gotas.push({
-    x: origemX,
-    y: origemY,
-    raio: 15,
-    velocidade: 3 + Math.random() * 2,
-    ativa: true
-  });
-  Som.tocar('gotaSolta');
-}
-
-function spawnPatogeno() {
-  const alturaRealInimigo = configInimigo.altura * escalaInimigo;
-  patogenos.push({
-    x: larguraJogo + 50,
-    y: nivelDoChao - (configInimigo.altura - configInimigo.rodape) * escalaInimigo,
-    largura: configInimigo.largura * escalaInimigo,
-    altura: alturaRealInimigo,
-    velocidade: -1.5 - Math.random() * 1.5,
-    ativa: true
-  });
-  Som.tocar('patogeno');
-}
-
-function criarAvisoRalstonia() {
-  const margem = 60;
-  avisosRalstonia.push({
-    x: margem + Math.random() * Math.max(1, larguraJogo - 2 * margem),
-    y: RALSTONIA.yAviso,
-    tempo: RALSTONIA.duracaoAviso,
-  });
-  Som.tocar('avisoRalstonia');
-}
-
-function lancarRalstonia(aviso) {
-  ralstonias.push({
-    x: aviso.x,              // centro do corpo
-    y: aviso.y,
-    vx: 0,
-    vy: RALSTONIA.velInicial,
-    vel: RALSTONIA.velInicial,
-    viradaParaEsquerda: false,
-  });
-}
-
-function gerarTerraNoSolo(x, y) {
-  for (let i = 0; i < 18; i++) {
+// ============================================================
+//  EFEITOS
+// ============================================================
+function gerarExplosao(x, y, cor, quantidade = 30) {
+  for (let i = 0; i < quantidade; i++) {
     particulas.push({
-      x: x + (Math.random() - 0.5) * 30,
-      y,
-      vx: (Math.random() - 0.5) * 6,
-      vy: -Math.random() * 6 - 1,
-      tamanho: Math.random() * 5 + 2,
-      cor: i % 3 === 0 ? '#e08a3c' : '#6b4a2f',
-      vida: 1,
-      taxaMorte: Math.random() * 0.03 + 0.03,
-      peso: 0.4
-    });
-  }
-}
-
-function atualizarRalstonias(alvoX, alvoY, hitbox) {
-  if (ralstonias.length === 0 && avisosRalstonia.length === 0) {
-    tempoProximaRalstonia--;
-    if (tempoProximaRalstonia <= 0) {
-      criarAvisoRalstonia();
-      tempoProximaRalstonia = RALSTONIA.intervaloMin + Math.random() * RALSTONIA.intervaloVar;
-    }
-  }
-  for (let i = avisosRalstonia.length - 1; i >= 0; i--) {
-    const aviso = avisosRalstonia[i];
-    aviso.tempo--;
-    if (aviso.tempo <= 0) {
-      lancarRalstonia(aviso);
-      avisosRalstonia.splice(i, 1);
-    }
-  }
-
-  const linhaTrava = nivelDoChao - RALSTONIA.alturaTrava;
-  for (let i = ralstonias.length - 1; i >= 0; i--) {
-    const r = ralstonias[i];
-    r.vel = Math.min(RALSTONIA.velMax, r.vel + RALSTONIA.aceleracao);
-    let angulo = Math.atan2(r.vy, r.vx);
-    if (r.y < linhaTrava) {
-      // Persegue com curva limitada.
-      const desejado = Math.atan2(alvoY - r.y, alvoX - r.x);
-      let delta = desejado - angulo;
-      while (delta > Math.PI) delta -= Math.PI * 2;
-      while (delta < -Math.PI) delta += Math.PI * 2;
-      angulo += Math.max(-RALSTONIA.curvaMax, Math.min(RALSTONIA.curvaMax, delta));
-      // Nunca sobe: a descida é sempre para baixo.
-      angulo = Math.max(0.35, Math.min(Math.PI - 0.35, angulo));
-    }
-    r.vx = Math.cos(angulo) * r.vel;
-    r.vy = Math.sin(angulo) * r.vel;
-    r.x += r.vx;
-    r.y += r.vy;
-    if (Math.abs(r.vx) > 0.4) r.viradaParaEsquerda = r.vx < 0;
-
-    // Colisão círculo (Ralstonia) x retângulo (Miguelito).
-    const px = Math.max(hitbox.x, Math.min(r.x, hitbox.x + hitbox.w));
-    const py = Math.max(hitbox.y, Math.min(r.y, hitbox.y + hitbox.h));
-    const tocou = (r.x - px) ** 2 + (r.y - py) ** 2 < RALSTONIA.raio * RALSTONIA.raio;
-    if (tocou && !isTomandoDano && !invulneravel) {
-      ralstonias.splice(i, 1);
-      if (miguelitoCarregadoRoxo) {
-        miguelitoCarregadoRoxo = false;
-        intensidadePulsoEscudo = 1;
-        pontos++;
-        gerarExplosao(r.x, r.y, '#e08a3c');
-        Som.tocar('neutralizar');
-      } else {
-        sofrerDano(r.x);
-      }
-      continue;
-    }
-
-    // Errou: chega ao solo e desaparece.
-    const baseY = r.y + (configRalstonia.altura - configRalstonia.centroY) * escalaRalstonia * 0.75;
-    if (baseY >= nivelDoChao || r.x < -80 || r.x > larguraJogo + 80) {
-      gerarTerraNoSolo(r.x, Math.min(baseY, nivelDoChao));
-      ralstonias.splice(i, 1);
-      Som.tocar('ralstoniaSolo');
-    }
-  }
-}
-
-function gerarExplosao(x, y, cor) {
-  for (let i = 0; i < 30; i++) {
-    particulas.push({
-      x,
-      y,
+      x, y,
       vx: (Math.random() - 0.5) * 12,
       vy: (Math.random() - 1) * 10,
       tamanho: Math.random() * 8 + 4,
@@ -903,6 +1003,23 @@ function gerarExplosao(x, y, cor) {
       vida: 1,
       taxaMorte: Math.random() * 0.03 + 0.02,
       peso: 0.5
+    });
+  }
+}
+
+function gerarBrilhos(x, y, cores, quantidade = 16) {
+  for (let i = 0; i < quantidade; i++) {
+    const a = Math.random() * Math.PI * 2;
+    const v = 1 + Math.random() * 3;
+    particulas.push({
+      x, y,
+      vx: Math.cos(a) * v,
+      vy: Math.sin(a) * v - 1,
+      tamanho: Math.random() * 3 + 2,
+      cor: cores[i % cores.length],
+      vida: 1,
+      taxaMorte: 0.025 + Math.random() * 0.02,
+      peso: -0.03
     });
   }
 }
@@ -921,6 +1038,416 @@ function gerarRastro(x, y) {
   });
 }
 
+function textoFlutuante(x, y, texto, cor) {
+  textos.push({ x: limitar(x, 50, larguraJogo - 50), y, texto, cor, t: 0, dur: 70 });
+}
+
+// ============================================================
+//  PLANTA
+// ============================================================
+function perderPlanta(qtd, x, y) {
+  if (estadoJogo !== 'jogando') return;
+  planta = Math.max(0, planta - qtd);
+  tempoRegen = CFG.planta.regen;
+  textoFlutuante(x, y, `−${qtd} 🌱`, '#ffb36b');
+  Som.tocar('plantaPerde');
+  flashBarraPlanta('perdeu');
+  if (planta <= 0) motivoFim = 'planta';
+}
+
+function atualizarPlanta() {
+  if (colonias.length > 0 || planta >= CFG.planta.max) {
+    tempoRegen = CFG.planta.regen;
+  } else {
+    tempoRegen--;
+    if (tempoRegen <= 0) {
+      planta = Math.min(CFG.planta.max, planta + 1);
+      tempoRegen = CFG.planta.regen;
+      flashBarraPlanta('recuperou');
+    }
+  }
+  const alvo = 1 - planta / CFG.planta.max;
+  murchaVisual += (alvo - murchaVisual) * 0.04;
+}
+
+// ============================================================
+//  ONDAS
+// ============================================================
+function iniciarOnda(numero) {
+  const cfg = configDaOnda(numero);
+  onda = {
+    numero,
+    cfg,
+    fase: 'pausa',
+    tPausa: CFG.pausaEntreOndas,
+    nematoidesRestantes: cfg.nematoides,
+    ralstoniasRestantes: cfg.ralstonias,
+    tNematoide: 30,
+    tRalstonia: cfg.primeiraRalstonia || 0,
+  };
+  if (cfg.pseudomonas && !pseudomonas && !temHalo) {
+    tempoProximaPseudomonas = Math.min(tempoProximaPseudomonas || Infinity, CFG.pausaEntreOndas + CFG.pseudomonas.primeira);
+  }
+  if (cfg.pseudomonas) elCargaPseudo.classList.add('disponivel');
+  mostrarBanner(cfg.titulo, cfg.dica);
+  elOnda.textContent = cfg.titulo;
+}
+
+function ondaTerminou() {
+  return onda.nematoidesRestantes === 0 && onda.ralstoniasRestantes === 0 &&
+    patogenos.length === 0 && ralstonias.every((r) => r.fase === 'inibida');
+}
+
+function atualizarOnda() {
+  if (onda.fase === 'pausa') {
+    onda.tPausa--;
+    if (onda.tPausa <= 0) onda.fase = 'ativa';
+    return;
+  }
+  const cfg = onda.cfg;
+  if (onda.nematoidesRestantes > 0) {
+    onda.tNematoide--;
+    if (onda.tNematoide <= 0) {
+      spawnNematoide(cfg);
+      onda.nematoidesRestantes--;
+      onda.tNematoide = cfg.intervaloNematoide;
+    }
+  }
+  if (onda.ralstoniasRestantes > 0) {
+    onda.tRalstonia--;
+    if (onda.tRalstonia <= 0) {
+      spawnRalstonia();
+      onda.ralstoniasRestantes--;
+      onda.tRalstonia = cfg.intervaloRalstonia;
+    }
+  }
+  if (ondaTerminou()) iniciarOnda(onda.numero + 1);
+}
+
+// ============================================================
+//  NEMATOIDE
+//  Rasteja em ondas (avança e desacelera, o corpo sobe e desce).
+//  Se atravessar a área sem ser neutralizado, ataca a raiz.
+// ============================================================
+function spawnNematoide(cfg) {
+  const largura = configInimigo.largura * escalaInimigo;
+  const altura = configInimigo.altura * escalaInimigo;
+  const dir = cfg.ambosLados && Math.random() < 0.5 ? 1 : -1;
+  const vel = (CFG.nematoide.velMin + Math.random() * CFG.nematoide.velVar) * cfg.velNematoide;
+  patogenos.push({
+    x: dir < 0 ? larguraJogo + 50 : -50 - largura,
+    y: nivelDoChao - (configInimigo.altura - configInimigo.rodape) * escalaInimigo,
+    largura,
+    altura,
+    dir,
+    vel,
+    fase: Math.random() * Math.PI * 2,
+    t: 0,
+  });
+  Som.tocar('patogeno');
+}
+
+function ondulacaoNematoide(pat) {
+  return 0.5 + 0.5 * Math.sin(pat.t * 0.13 + pat.fase);
+}
+
+function atualizarNematoides(hb) {
+  for (let i = patogenos.length - 1; i >= 0; i--) {
+    const pat = patogenos[i];
+    pat.t++;
+    pat.x += pat.dir * pat.vel * (0.45 + 0.55 * ondulacaoNematoide(pat));
+    const pw = pat.largura * 0.5;
+    const ph = pat.altura * 0.55;
+    const caixa = { x: pat.x + (pat.largura - pw) / 2, y: pat.y + (pat.altura - ph), w: pw, h: ph };
+    if (!isTomandoDano && !invulneravel && caixasSeTocam(hb, caixa)) {
+      if (miguelitoCarregadoRoxo) {
+        patogenos.splice(i, 1);
+        miguelitoCarregadoRoxo = false;
+        intensidadePulsoEscudo = 1;
+        pontos++;
+        gerarExplosao(caixa.x + pw / 2, caixa.y + ph / 2, '#a67c52');
+        Som.tocar('neutralizar');
+        continue;
+      }
+      sofrerDano(caixa.x + pw / 2);
+    }
+    const escapou = pat.dir < 0 ? pat.x + pat.largura < -20 : pat.x > larguraJogo + 20;
+    if (escapou) {
+      patogenos.splice(i, 1);
+      perderPlanta(CFG.planta.perdaNematoide, pat.dir < 0 ? 40 : larguraJogo - 40, nivelDoChao - 120);
+    }
+  }
+}
+
+// ============================================================
+//  RALSTONIA — três atos
+//  1 surge: aparece pequena e translúcida ao fundo e cresce até o
+//    plano do Miguelito (ainda não fere).
+//  2 ronda: nada em curvas, desce devagar e acompanha o Miguelito
+//    com atraso. Uma sombra no chão mostra onde ela está.
+//  3 bote: para, treme e abre a boca; marca no chão onde o
+//    Miguelito estava e mergulha em arco até lá.
+//  Se chegar ao solo, vira colônia. O sprite nunca gira: só espelha.
+// ============================================================
+function spawnRalstonia() {
+  const R = CFG.ralstonia;
+  const x = 80 + Math.random() * Math.max(1, larguraJogo - 160);
+  const y = 150 + Math.random() * 110;
+  ralstonias.push({
+    fase: 'surge',
+    t: 0,
+    x, y,
+    bx: x, by: y, bvx: 0,
+    yInicio: y,
+    escala: 0.35,
+    alpha: 0.2,
+    viradaEsq: Math.random() < 0.5,
+    xAnterior: x,
+    fasePhase: Math.random() * Math.PI * 2,
+    duracaoRonda: R.rondaMin + Math.random() * R.rondaVar,
+    seq: SEQ_RONDA,
+    seqIdx: Math.floor(Math.random() * SEQ_RONDA.length),
+    anim: 0,
+    alvoX: 0,
+    arco: null,
+  });
+  Som.tocar('ralstoniaSurge');
+}
+
+function mudarFaseRalstonia(r, fase) {
+  r.fase = fase;
+  r.t = 0;
+  r.anim = 0;
+  r.seqIdx = 0;
+  if (fase === 'ronda') r.seq = SEQ_RONDA;
+  else if (fase === 'preparo') r.seq = SEQ_PREPARO;
+  else if (fase === 'bote') r.seq = SEQ_BOTE;
+}
+
+function ralstoniaNoPlano(r) {
+  return r.fase === 'ronda' || r.fase === 'preparo' || r.fase === 'bote';
+}
+
+function quadroRalstonia(r) {
+  return r.seq[r.seqIdx % r.seq.length];
+}
+
+function atualizarRalstonias(hb) {
+  const R = CFG.ralstonia;
+  const alvo = centroMiguelito();
+  for (let i = ralstonias.length - 1; i >= 0; i--) {
+    const r = ralstonias[i];
+    r.t++;
+    r.anim++;
+    const ritmo = r.fase === 'preparo' ? 4 : 7;
+    if (r.anim % ritmo === 0) r.seqIdx++;
+    r.xAnterior = r.x;
+
+    if (r.fase === 'surge') {
+      const p = Math.min(1, r.t / R.surge);
+      r.escala = 0.35 + 0.65 * suave(p);
+      r.alpha = 0.2 + 0.8 * p;
+      r.bx += Math.sin(r.t * 0.04 + r.fasePhase) * 0.5;
+      r.by += 0.25;
+      r.x = r.bx;
+      r.y = r.by;
+      if (p >= 1) {
+        r.yInicio = r.by;
+        mudarFaseRalstonia(r, 'ronda');
+      }
+    } else if (r.fase === 'ronda') {
+      const q = Math.min(1, r.t / r.duracaoRonda);
+      // Base acompanha o Miguelito com atraso (mola amortecida).
+      r.bvx += (alvo.x - r.bx) * R.seguir;
+      r.bvx *= 0.93;
+      r.bvx = limitar(r.bvx, -R.velMaxRonda, R.velMaxRonda);
+      r.bx = limitar(r.bx + r.bvx, 50, larguraJogo - 50);
+      const yAlvo = r.yInicio + (nivelDoChao - R.alturaRonda - r.yInicio) * suave(q);
+      r.by += (yAlvo - r.by) * 0.05;
+      // Nado sinuoso por cima da base.
+      const w = (Math.PI * 2) / R.periodo;
+      r.x = limitar(r.bx + Math.sin(r.t * w + r.fasePhase) * R.amplitude, 30, larguraJogo - 30);
+      r.y = r.by + Math.sin(r.t * w * 2 + r.fasePhase) * 14;
+      if (q >= 1) {
+        mudarFaseRalstonia(r, 'preparo');
+        r.alvoX = limitar(alvo.x, 40, larguraJogo - 40);
+        r.xPreparo = r.x;
+        r.yPreparo = r.y;
+        Som.tocar('ralstoniaBote');
+      }
+    } else if (r.fase === 'preparo') {
+      r.x = r.xPreparo + (Math.random() - 0.5) * 7;
+      r.y = r.yPreparo + (Math.random() - 0.5) * 4;
+      if (r.t >= R.preparo) {
+        mudarFaseRalstonia(r, 'bote');
+        // Arco: o deslocamento lateral acontece no alto e o mergulho final
+        // cai quase na vertical sobre a marca. Assim, sair da marca para
+        // qualquer lado funciona como desvio.
+        r.arco = {
+          x0: r.xPreparo, y0: r.yPreparo,
+          x1: r.alvoX, y1: nivelDoChao - 26,
+          cx: r.alvoX, cy: r.yPreparo,
+        };
+      }
+    } else if (r.fase === 'bote') {
+      const p = Math.min(1, r.t / R.bote);
+      const e = Math.pow(p, 1.5);
+      const a = r.arco;
+      const u = 1 - e;
+      // Pequena ondulação sinuosa que some ao chegar no chão.
+      r.x = u * u * a.x0 + 2 * u * e * a.cx + e * e * a.x1 + Math.sin(p * Math.PI * 3) * 14 * (1 - p);
+      r.y = u * u * a.y0 + 2 * u * e * a.cy + e * e * a.y1;
+      if (p >= 1) {
+        ralstonias.splice(i, 1);
+        criarColonia(r.x);
+        continue;
+      }
+    } else if (r.fase === 'inibida') {
+      const p = Math.min(1, r.t / 45);
+      r.escala = 1 - 0.6 * p;
+      r.alpha = 1 - p;
+      r.y -= 0.6;
+      if (p >= 1) {
+        ralstonias.splice(i, 1);
+        continue;
+      }
+    }
+
+    // Espelha só pela direção do movimento horizontal (com folga).
+    const dx = r.x - r.xAnterior;
+    if (r.fase !== 'preparo') {
+      if (dx > 0.35) r.viradaEsq = false;
+      else if (dx < -0.35) r.viradaEsq = true;
+    }
+
+    if (ralstoniaNoPlano(r) && !isTomandoDano && !invulneravel &&
+        circuloTocaCaixa(r.x, r.y, R.raio * r.escala, hb)) {
+      ralstonias.splice(i, 1);
+      gerarExplosao(r.x, r.y, '#e08a3c', 14);
+      sofrerDano(r.x);
+    }
+  }
+}
+
+// ============================================================
+//  COLÔNIA DE RALSTONIA NO SOLO
+//  Drena a planta até ser limpa pelo pulso da Pseudomonas.
+// ============================================================
+function criarColonia(x) {
+  colonias.push({ x: limitar(x, 40, larguraJogo - 40), t: 0, dreno: CFG.planta.drenoColonia, fase: Math.random() * 6 });
+  gerarExplosao(x, nivelDoChao - 10, '#e08a3c', 18);
+  Som.tocar('colonia');
+}
+
+function atualizarColonias() {
+  for (const c of colonias) {
+    c.t++;
+    c.dreno--;
+    if (c.dreno <= 0) {
+      c.dreno = CFG.planta.drenoColonia;
+      perderPlanta(1, c.x, nivelDoChao - 70);
+    }
+    if (Math.random() < 0.06) {
+      particulas.push({
+        x: c.x + (Math.random() - 0.5) * 60,
+        y: nivelDoChao - 4,
+        vx: (Math.random() - 0.5) * 0.4,
+        vy: -0.6 - Math.random() * 0.8,
+        tamanho: 2 + Math.random() * 3,
+        cor: '#f0a050',
+        vida: 0.9,
+        taxaMorte: 0.02,
+        peso: -0.01
+      });
+    }
+  }
+}
+
+// ============================================================
+//  PSEUDOMONAS E O PULSO DE SIDERÓFOROS
+//  Brota do solo. Ao encostar, o Miguelito ganha um halo
+//  fluorescente (pioverdina). Quando uma Ralstonia no plano ou uma
+//  colônia entra no raio, o pulso dispara sozinho e inibe tudo o
+//  que estiver dentro dele.
+// ============================================================
+function spawnPseudomonas() {
+  const largura = configPseudomonas.largura * escalaPseudomonas;
+  const hb = hitboxMiguelito();
+  // Nasce longe do Miguelito, para exigir deslocamento.
+  let x = 0;
+  for (let tentativa = 0; tentativa < 6; tentativa++) {
+    x = 30 + Math.random() * Math.max(1, larguraJogo - largura - 60);
+    if (Math.abs(x + largura / 2 - (hb.x + hb.w / 2)) > 150) break;
+  }
+  pseudomonas = { x, t: 0, fase: 'brotando', vida: CFG.pseudomonas.vida };
+  Som.tocar('pseudomonasBrota');
+}
+
+function atualizarPseudomonas(hb) {
+  if (!onda || !onda.cfg.pseudomonas) return;
+  if (!pseudomonas && !temHalo) {
+    tempoProximaPseudomonas--;
+    if (tempoProximaPseudomonas <= 0) spawnPseudomonas();
+  }
+  if (pseudomonas) {
+    const p = pseudomonas;
+    p.t++;
+    if (p.fase === 'brotando' && p.t >= 30) { p.fase = 'parada'; p.t = 0; }
+    else if (p.fase === 'parada') {
+      p.vida--;
+      if (p.vida <= 0) { p.fase = 'afundando'; p.t = 0; }
+    } else if (p.fase === 'afundando' && p.t >= 30) {
+      pseudomonas = null;
+      tempoProximaPseudomonas = CFG.pseudomonas.intervaloMin + Math.random() * CFG.pseudomonas.intervaloVar;
+    }
+    if (pseudomonas && p.fase !== 'afundando') {
+      const largura = configPseudomonas.largura * escalaPseudomonas;
+      const altura = (configPseudomonas.altura - configPseudomonas.rodape) * escalaPseudomonas;
+      const caixa = { x: p.x + largura * 0.25, y: nivelDoChao - altura, w: largura * 0.5, h: altura };
+      if (caixasSeTocam(hb, caixa)) {
+        temHalo = true;
+        gerarBrilhos(caixa.x + caixa.w / 2, caixa.y + caixa.h / 2, ['#c8f25a', '#5ee6d0', '#fff6a0'], 22);
+        pseudomonas = null;
+        tempoProximaPseudomonas = CFG.pseudomonas.intervaloMin + Math.random() * CFG.pseudomonas.intervaloVar;
+        Som.tocar('pseudomonasPega');
+      }
+    }
+  }
+
+  if (temHalo) {
+    const c = centroMiguelito();
+    const raio = CFG.pseudomonas.raioPulso;
+    const alvoNoAr = ralstonias.some((r) => ralstoniaNoPlano(r) && Math.hypot(r.x - c.x, r.y - c.y) < raio);
+    const alvoNoSolo = colonias.some((col) => Math.abs(col.x - c.x) < raio * 0.8);
+    if (alvoNoAr || alvoNoSolo) dispararPulso(c.x, c.y);
+  }
+}
+
+function dispararPulso(x, y) {
+  const raio = CFG.pseudomonas.raioPulso;
+  temHalo = false;
+  pulsos.push({ x, y, t: 0, dur: 32, max: raio * 1.15 });
+  let atingidos = 0;
+  for (const r of ralstonias) {
+    if (ralstoniaNoPlano(r) && Math.hypot(r.x - x, r.y - y) < raio * 1.15) {
+      mudarFaseRalstonia(r, 'inibida');
+      r.seq = [quadroRalstonia(r)];
+      gerarBrilhos(r.x, r.y, ['#c8f25a', '#5ee6d0'], 12);
+      atingidos++;
+    }
+  }
+  for (let i = colonias.length - 1; i >= 0; i--) {
+    if (Math.abs(colonias[i].x - x) < raio * 1.15) {
+      gerarBrilhos(colonias[i].x, nivelDoChao - 10, ['#c8f25a', '#5ee6d0', '#f0a050'], 16);
+      colonias.splice(i, 1);
+      atingidos++;
+    }
+  }
+  pontos += atingidos;
+  Som.tocar('pulso');
+  if (atingidos > 0) setTimeout(() => Som.tocar('inibida'), 120);
+}
+
 // ============================================================
 //  HUD
 // ============================================================
@@ -928,6 +1455,13 @@ const elVidas = document.getElementById('vidas');
 const elPontos = document.getElementById('pontos');
 const elPlacar = document.getElementById('placar');
 const elCarga = document.getElementById('carga');
+const elCargaPseudo = document.getElementById('cargaPseudo');
+const elBarraPlanta = document.getElementById('barraPlanta');
+const elPreenchimentoPlanta = document.getElementById('preenchimentoPlanta');
+const elOnda = document.getElementById('ondaAtual');
+const elBanner = document.getElementById('bannerOnda');
+const elBannerTitulo = document.getElementById('bannerTitulo');
+const elBannerDica = document.getElementById('bannerDica');
 const btnSom = document.getElementById('btnSom');
 const SVG_CORACAO = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.4 2.3 4.5 6 4.5c2.2 0 3.6 1.2 4.5 2.6.9-1.4 2.3-2.6 4.5-2.6 3.7 0 5.6 3.9 4 7.2C19.5 16.4 12 21 12 21z" fill="#e8505b" stroke="#fff" stroke-opacity=".55" stroke-width="1.2"/></svg>';
 const SVG_SOM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor" stroke="none"/><path d="M16 8.5a5 5 0 0 1 0 7M18.8 6a8.5 8.5 0 0 1 0 12"/></svg>';
@@ -939,6 +1473,32 @@ btnSom.innerHTML = SVG_SOM;
 let hudVidas = -1;
 let hudPontos = -1;
 let hudCarga = null;
+let hudHalo = null;
+let hudPlanta = -1;
+let timerBanner = null;
+
+function corDaPlanta(fracao) {
+  // verde (saudável) -> amarelo -> marrom (murcha)
+  const matiz = 28 + 72 * fracao;
+  const sat = 55 + 15 * fracao;
+  const luz = 38 + 10 * fracao;
+  return `hsl(${matiz}, ${sat}%, ${luz}%)`;
+}
+
+function flashBarraPlanta(classe) {
+  elBarraPlanta.classList.remove('perdeu', 'recuperou');
+  void elBarraPlanta.offsetWidth;
+  elBarraPlanta.classList.add(classe);
+}
+
+function mostrarBanner(titulo, dica) {
+  elBannerTitulo.textContent = titulo;
+  elBannerDica.textContent = dica || '';
+  elBanner.classList.add('visivel');
+  clearTimeout(timerBanner);
+  timerBanner = setTimeout(() => elBanner.classList.remove('visivel'), dica ? 4200 : 2600);
+}
+
 function atualizarHud() {
   if (vidas !== hudVidas) {
     const coracoes = elVidas.querySelectorAll('svg');
@@ -961,8 +1521,20 @@ function atualizarHud() {
   }
   if (miguelitoCarregadoRoxo !== hudCarga) {
     elCarga.classList.toggle('cheia', miguelitoCarregadoRoxo);
-    elCarga.setAttribute('aria-label', miguelitoCarregadoRoxo ? 'Carregado' : 'Sem carga');
+    elCarga.setAttribute('aria-label', miguelitoCarregadoRoxo ? 'Gota do Bacillus pronta' : 'Sem gota do Bacillus');
     hudCarga = miguelitoCarregadoRoxo;
+  }
+  if (temHalo !== hudHalo) {
+    elCargaPseudo.classList.toggle('cheia', temHalo);
+    elCargaPseudo.setAttribute('aria-label', temHalo ? 'Pulso da Pseudomonas pronto' : 'Sem pulso da Pseudomonas');
+    hudHalo = temHalo;
+  }
+  if (planta !== hudPlanta) {
+    const fracao = planta / CFG.planta.max;
+    elPreenchimentoPlanta.style.width = `${fracao * 100}%`;
+    elPreenchimentoPlanta.style.background = corDaPlanta(fracao);
+    elBarraPlanta.setAttribute('aria-valuenow', planta);
+    hudPlanta = planta;
   }
 }
 
@@ -983,14 +1555,21 @@ const btnRecomecar = document.getElementById('btnRecomecar');
 function zerarPartida() {
   vidas = VIDAS_INICIAIS;
   pontos = 0;
-  tempoProximoPatogeno = INTERVALO_PATOGENOS;
+  planta = CFG.planta.max;
+  tempoRegen = CFG.planta.regen;
+  murchaVisual = 0;
+  motivoFim = null;
   gotas = [];
   patogenos = [];
-  particulas = [];
   ralstonias = [];
-  avisosRalstonia = [];
-  tempoProximaRalstonia = RALSTONIA.primeiraEm;
+  colonias = [];
+  pseudomonas = null;
+  tempoProximaPseudomonas = 0;
+  pulsos = [];
+  particulas = [];
+  textos = [];
   miguelitoCarregadoRoxo = false;
+  temHalo = false;
   intensidadePulsoEscudo = 0;
   isTomandoDano = false;
   invulneravel = false;
@@ -1004,6 +1583,9 @@ function zerarPartida() {
   pesPersonagem = nivelDoChao;
   inicializarBacillus();
   for (const tecla in teclas) teclas[tecla] = false;
+  onda = null;
+  elCargaPseudo.classList.remove('disponivel');
+  elOnda.textContent = '';
   atualizarHud();
 }
 
@@ -1018,6 +1600,7 @@ function comecarPartida() {
   telaInicio.classList.remove('visivel');
   telaFim.classList.remove('visivel');
   estadoJogo = 'jogando';
+  iniciarOnda(1);
   Som.tocar('inicio');
   Som.ligarAmbiente();
   Som.tocarMusica();
@@ -1025,8 +1608,13 @@ function comecarPartida() {
 
 function fimDeJogo() {
   estadoJogo = 'fim';
+  const numeroOnda = onda ? onda.numero : 1;
+  document.getElementById('tituloFim').textContent =
+    motivoFim === 'planta' ? 'A planta murchou' : 'O Miguelito cansou';
+  document.getElementById('ondaFinal').textContent = numeroOnda;
   document.getElementById('pontosFinais').textContent = pontos;
   document.getElementById('palavraPatogenos').textContent = pontos === 1 ? 'patógeno' : 'patógenos';
+  elBanner.classList.remove('visivel');
   telaFim.classList.add('visivel');
   Som.pararMusica();
   Som.tocar('fim');
@@ -1138,10 +1726,27 @@ document.addEventListener('fullscreenchange', tratarMudancaFullscreen);
 document.addEventListener('webkitfullscreenchange', tratarMudancaFullscreen);
 
 // ============================================================
+//  DANO
+// ============================================================
+function sofrerDano(origemX) {
+  const larguraAtual = configDoEstadoAtual().largura * escala;
+  const centro = xPersonagem + larguraAtual / 2;
+  vidas = Math.max(0, vidas - 1);
+  isTomandoDano = true;
+  invulneravel = true;
+  tempoInvulneravel = duracaoInvulnerabilidade;
+  direcaoRecuo = centro < origemX ? -1 : 1;
+  definirEstado('dano');
+  velocidadeY = -12;
+  noChao = false;
+  Som.tocar('dano');
+}
+
+// ============================================================
 //  ATUALIZAÇÃO
 // ============================================================
 function atualizarCenario() {
-  // Partes que continuam vivas mesmo fora da partida.
+  passoGlobal++;
   const agora = performance.now();
   for (const bac of pgpbs) {
     bac.x += bac.velocidadeX;
@@ -1153,17 +1758,12 @@ function atualizarCenario() {
     frameBacillusAtual = (frameBacillusAtual + 1) % configBacillus.colunas;
     contadorFramesBacillus = 0;
   }
-  // Os patógenos animam no próprio ritmo, independente do Miguelito.
   contadorFramesInimigo++;
   if (contadorFramesInimigo >= velocidadeAnimacaoInimigo) {
     frameInimigoAtual = (frameInimigoAtual + 1) % configInimigo.colunas;
     contadorFramesInimigo = 0;
   }
-  contadorFramesRalstonia++;
-  if (contadorFramesRalstonia >= 7) {
-    frameRalstoniaAtual = (frameRalstoniaAtual + 1) % configRalstonia.colunas;
-    contadorFramesRalstonia = 0;
-  }
+  if (passoGlobal % 4 === 0) framePseudomonasAtual = (framePseudomonasAtual + 1) % configPseudomonas.colunas;
   if (intensidadePulsoEscudo > 0) {
     intensidadePulsoEscudo = Math.max(0, intensidadePulsoEscudo - 0.05);
   }
@@ -1175,6 +1775,16 @@ function atualizarCenario() {
     p.vida -= p.taxaMorte;
     if (p.vida <= 0) particulas.splice(i, 1);
   }
+  for (let i = pulsos.length - 1; i >= 0; i--) {
+    pulsos[i].t++;
+    if (pulsos[i].t >= pulsos[i].dur) pulsos.splice(i, 1);
+  }
+  for (let i = textos.length - 1; i >= 0; i--) {
+    const t = textos[i];
+    t.t++;
+    t.y -= 0.9;
+    if (t.t >= t.dur) textos.splice(i, 1);
+  }
 }
 
 function quadroDoPulo() {
@@ -1184,23 +1794,11 @@ function quadroDoPulo() {
   return 4;
 }
 
-function atualizar() {
-  atualizarCenario();
-  if (estadoJogo !== 'jogando') return;
-
+function atualizarMiguelito() {
   if (invulneravel) {
     tempoInvulneravel--;
     if (tempoInvulneravel <= 0) invulneravel = false;
   }
-
-  // Patógenos nascem num temporizador do próprio jogo (antes era um
-  // setInterval que continuava rodando com a aba em segundo plano).
-  tempoProximoPatogeno--;
-  if (tempoProximoPatogeno <= 0) {
-    spawnPatogeno();
-    tempoProximoPatogeno = INTERVALO_PATOGENOS;
-  }
-
   if (!isTomandoDano) {
     if (teclas.ArrowRight) {
       xPersonagem += 4;
@@ -1224,7 +1822,6 @@ function atualizar() {
       Som.tocar('pulo');
     }
   } else {
-    // Recuo sempre para longe do patógeno que causou o dano.
     xPersonagem += direcaoRecuo * 2;
   }
   limitarPersonagem();
@@ -1242,10 +1839,7 @@ function atualizar() {
     if (isTomandoDano) {
       isTomandoDano = false;
       definirEstado('parado');
-      if (vidas <= 0) {
-        fimDeJogo();
-        return;
-      }
+      if (vidas <= 0) motivoFim = 'vidas';
     } else if (estavaNoAr) {
       Som.tocar('pouso');
       if (!teclas.ArrowLeft && !teclas.ArrowRight) {
@@ -1255,18 +1849,6 @@ function atualizar() {
       } else {
         definirEstado('andando');
       }
-    }
-  }
-
-  for (const bac of pgpbs) {
-    bac.tempoParaProximaGota--;
-    if (bac.tempoParaProximaGota <= 0) {
-      const larguraRenderizadaBacillus = configBacillus.largura * escalaBacillus;
-      spawnGotaRoxaDoBacillus(
-        bac.x + larguraRenderizadaBacillus / 2,
-        bac.yAtual + configBacillus.altura * escalaBacillus * 0.8
-      );
-      bac.tempoParaProximaGota = 150 + Math.random() * 90;
     }
   }
 
@@ -1301,23 +1883,29 @@ function atualizar() {
       contadorFrames = 0;
     }
   }
+}
 
-  const renderLarguraAtual = configAtual.largura * escala;
-  const renderAlturaAtual = configAtual.altura * escala;
-  const yTopo = topoPersonagem(configAtual);
-  const centroMiguelitoX = xPersonagem + renderLarguraAtual / 2;
-  const centroMiguelitoY = yTopo + renderAlturaAtual / 2;
+function atualizarGotas() {
+  for (const bac of pgpbs) {
+    bac.tempoParaProximaGota--;
+    if (bac.tempoParaProximaGota <= 0) {
+      const larguraRenderizadaBacillus = configBacillus.largura * escalaBacillus;
+      gotas.push({
+        x: bac.x + larguraRenderizadaBacillus / 2,
+        y: bac.yAtual + configBacillus.altura * escalaBacillus * 0.8,
+        raio: 15,
+        velocidade: 3 + Math.random() * 2,
+      });
+      Som.tocar('gotaSolta');
+      bac.tempoParaProximaGota = CFG.bacillus.gotaMin + Math.random() * CFG.bacillus.gotaVar;
+    }
+  }
+  const c = centroMiguelito();
   for (let i = gotas.length - 1; i >= 0; i--) {
     const gota = gotas[i];
-    if (!gota.ativa) {
-      gotas.splice(i, 1);
-      continue;
-    }
     gota.y += gota.velocidade;
     if (Math.random() > 0.3) gerarRastro(gota.x, gota.y);
-    const distX = centroMiguelitoX - gota.x;
-    const distY = centroMiguelitoY - gota.y;
-    if (Math.sqrt(distX * distX + distY * distY) < 70) {
+    if (Math.hypot(c.x - gota.x, c.y - gota.y) < 70) {
       gotas.splice(i, 1);
       if (!miguelitoCarregadoRoxo) Som.tocar('gota');
       miguelitoCarregadoRoxo = true;
@@ -1325,67 +1913,21 @@ function atualizar() {
     }
     if (gota.y > ALTURA_MUNDO + 50) gotas.splice(i, 1);
   }
-
-  const mHitboxWidth = renderLarguraAtual * 0.4;
-  const mHitboxHeight = renderAlturaAtual * 0.85;
-  const mHitboxX = xPersonagem + (renderLarguraAtual - mHitboxWidth) / 2;
-  const mHitboxY = yTopo + (renderAlturaAtual - mHitboxHeight);
-  for (let i = patogenos.length - 1; i >= 0; i--) {
-    const pat = patogenos[i];
-    if (!pat.ativa) {
-      patogenos.splice(i, 1);
-      continue;
-    }
-    pat.x += pat.velocidade;
-    const pHitboxWidth = pat.largura * 0.5;
-    const pHitboxHeight = pat.altura * 0.55;
-    const pHitboxX = pat.x + (pat.largura - pHitboxWidth) / 2;
-    const pHitboxY = pat.y + (pat.altura - pHitboxHeight);
-    const colidiu = !isTomandoDano && !invulneravel &&
-      mHitboxX < pHitboxX + pHitboxWidth &&
-      mHitboxX + mHitboxWidth > pHitboxX &&
-      mHitboxY < pHitboxY + pHitboxHeight &&
-      mHitboxY + mHitboxHeight > pHitboxY;
-    if (colidiu) {
-      if (miguelitoCarregadoRoxo) {
-        patogenos.splice(i, 1);
-        miguelitoCarregadoRoxo = false;
-        intensidadePulsoEscudo = 1;
-        pontos++;
-        gerarExplosao(
-          pHitboxX + pHitboxWidth / 2,
-          pHitboxY + pHitboxHeight / 2,
-          '#a67c52'
-        );
-        Som.tocar('neutralizar');
-        continue;
-      } else {
-        sofrerDano(pHitboxX + pHitboxWidth / 2);
-      }
-    }
-    if (pat.x + pat.largura < -60) patogenos.splice(i, 1);
-  }
-
-  atualizarRalstonias(
-    mHitboxX + mHitboxWidth / 2,
-    mHitboxY + mHitboxHeight * 0.35,
-    { x: mHitboxX, y: mHitboxY, w: mHitboxWidth, h: mHitboxHeight }
-  );
 }
 
-// Dano comum a todos os inimigos; recua para longe de quem causou.
-function sofrerDano(origemX) {
-  const larguraAtual = configDoEstadoAtual().largura * escala;
-  const centroMiguelito = xPersonagem + larguraAtual / 2;
-  vidas = Math.max(0, vidas - 1);
-  isTomandoDano = true;
-  invulneravel = true;
-  tempoInvulneravel = duracaoInvulnerabilidade;
-  direcaoRecuo = centroMiguelito < origemX ? -1 : 1;
-  definirEstado('dano');
-  velocidadeY = -12;
-  noChao = false;
-  Som.tocar('dano');
+function atualizar() {
+  atualizarCenario();
+  if (estadoJogo !== 'jogando') return;
+  atualizarMiguelito();
+  atualizarOnda();
+  atualizarGotas();
+  const hb = hitboxMiguelito();
+  atualizarNematoides(hb);
+  atualizarRalstonias(hb);
+  atualizarColonias();
+  atualizarPseudomonas(hitboxMiguelito());
+  atualizarPlanta();
+  if (motivoFim) fimDeJogo();
 }
 
 // ============================================================
@@ -1410,9 +1952,17 @@ function desenharFundoCover(imagem, larguraDestino, alturaDestino) {
   ctx.drawImage(imagem, sx, sy, sw, sh, 0, 0, larguraDestino, alturaDestino);
 }
 
-// Em telas largas (computador, tablet), escurece o que fica fora da área jogável.
+// Fundo com a murcha misturada por cima, conforme a saúde da planta.
+function desenharFundo(largura) {
+  desenharFundoCover(imgFundo, largura, ALTURA_MUNDO);
+  if (fundoMurcho && murchaVisual > 0.01) {
+    ctx.globalAlpha = Math.min(1, murchaVisual * 1.1);
+    desenharFundoCover(fundoMurcho, largura, ALTURA_MUNDO);
+    ctx.globalAlpha = 1;
+  }
+}
+
 function desenharMargens() {
-  if (larguraMundo - larguraJogo < 1) return;
   const xFim = xInicioJogo + larguraJogo;
   ctx.fillStyle = 'rgba(6, 4, 3, 0.62)';
   ctx.fillRect(0, 0, xInicioJogo, ALTURA_MUNDO);
@@ -1430,68 +1980,125 @@ function desenharMargens() {
   ctx.fillRect(xFim - borda, 0, borda, ALTURA_MUNDO);
 }
 
-function desenhar() {
-  prepararContexto();
-  ctx.clearRect(0, 0, larguraMundo, ALTURA_MUNDO);
-  const telaLarga = larguraMundo - larguraJogo >= 1;
-  // Em tela larga, o cenário inteiro vira só moldura das margens.
-  if (telaLarga) desenharFundoCover(imgFundo, larguraMundo, ALTURA_MUNDO);
+function desenharSombra(x, largura, alpha) {
+  if (alpha <= 0.01) return;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.ellipse(x, nivelDoChao - 4, largura / 2, largura / 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
 
-  // Tudo o que é jogo fica recortado e posicionado na área jogável.
+function desenharColonias() {
+  for (const c of colonias) {
+    const pulso = 0.5 + 0.5 * Math.sin(c.t * 0.08 + c.fase);
+    const raio = 62 + pulso * 8;
+    ctx.save();
+    ctx.translate(c.x, nivelDoChao - 6);
+    ctx.scale(1, 0.32);
+    const g = ctx.createRadialGradient(0, 0, 4, 0, 0, raio);
+    g.addColorStop(0, `rgba(250, 160, 70, ${0.85})`);
+    g.addColorStop(0.55, `rgba(214, 110, 40, ${0.6 + 0.2 * pulso})`);
+    g.addColorStop(1, 'rgba(120, 60, 20, 0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, raio, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    // Grumos da colônia.
+    ctx.fillStyle = 'rgba(255, 190, 110, 0.85)';
+    for (let k = 0; k < 6; k++) {
+      const a = k * 1.7 + c.fase;
+      const bx = c.x + Math.cos(a) * (18 + (k % 3) * 13);
+      const by = nivelDoChao - 7 + Math.sin(a) * 4 - Math.abs(Math.sin(c.t * 0.05 + k)) * 2;
+      ctx.beginPath();
+      ctx.arc(bx, by, 3 + (k % 2) * 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+}
+
+function desenharRalstonia(r) {
+  const s = escalaRalstonia * r.escala;
+  const img = r.fase === 'inibida' && ralstoniaPalida ? ralstoniaPalida : imgRalstonia;
+  ctx.save();
+  ctx.globalAlpha = r.alpha;
+  ctx.translate(r.x, r.y);
+  if (r.viradaEsq) ctx.scale(-1, 1);
+  ctx.drawImage(img, quadroRalstonia(r) * configRalstonia.largura, 0, configRalstonia.largura, configRalstonia.altura,
+    -configRalstonia.centroX * s, -configRalstonia.centroY * s, configRalstonia.largura * s, configRalstonia.altura * s);
+  ctx.restore();
+}
+
+function desenharMarcasDoBote() {
+  for (const r of ralstonias) {
+    if (r.fase !== 'preparo' && r.fase !== 'bote') continue;
+    const p = r.fase === 'preparo' ? r.t / CFG.ralstonia.preparo : 1;
+    const pisca = 0.55 + 0.45 * Math.sin(passoGlobal * 0.5);
+    ctx.save();
+    ctx.translate(r.alvoX, nivelDoChao - 5);
+    ctx.scale(1, 0.3);
+    ctx.strokeStyle = `rgba(255, 140, 50, ${0.9 * pisca})`;
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.arc(0, 0, 26 + 18 * (1 - p), 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(255, 140, 50, ${0.25 * pisca})`;
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+function desenharPseudomonas() {
+  if (!pseudomonas) return;
+  const p = pseudomonas;
+  const largura = configPseudomonas.largura * escalaPseudomonas;
+  const altura = configPseudomonas.altura * escalaPseudomonas;
+  const alturaVisivel = (configPseudomonas.altura - configPseudomonas.rodape) * escalaPseudomonas;
+  let saida = 0; // 0 = totalmente acima do solo, 1 = enterrada
+  if (p.fase === 'brotando') saida = 1 - suave(Math.min(1, p.t / 30));
+  else if (p.fase === 'afundando') saida = suave(Math.min(1, p.t / 30));
+  const balanco = Math.sin(passoGlobal * 0.06) * 3;
+  const topo = nivelDoChao - alturaVisivel + saida * alturaVisivel + balanco;
+  // Brilho fluorescente no solo (pioverdina).
+  const cx = p.x + largura / 2;
+  const brilho = ctx.createRadialGradient(cx, nivelDoChao - 30, 4, cx, nivelDoChao - 30, 90);
+  brilho.addColorStop(0, `rgba(200, 242, 90, ${0.35 * (1 - saida)})`);
+  brilho.addColorStop(1, 'rgba(200, 242, 90, 0)');
+  ctx.fillStyle = brilho;
+  ctx.beginPath();
+  ctx.arc(cx, nivelDoChao - 30, 90, 0, Math.PI * 2);
+  ctx.fill();
+  // Aviso de que vai sumir: pisca no último segundo.
+  if (p.fase === 'parada' && p.vida < 60 && Math.floor(p.vida / 6) % 2 === 0) return;
   ctx.save();
   ctx.beginPath();
-  ctx.rect(xInicioJogo, 0, larguraJogo, ALTURA_MUNDO);
+  ctx.rect(p.x - 10, 0, largura + 20, nivelDoChao + 4);
   ctx.clip();
-  ctx.translate(xInicioJogo, 0);
-  // A área jogável mostra o cenário em altura total, com o piso visível.
-  desenharFundoCover(imgFundo, larguraJogo, ALTURA_MUNDO);
+  ctx.drawImage(imgPseudomonas, framePseudomonasAtual * configPseudomonas.largura, 0,
+    configPseudomonas.largura, configPseudomonas.altura, p.x, topo, largura, altura);
+  ctx.restore();
+}
 
-  for (const bac of pgpbs) {
-    const renderLarguraBacillus = configBacillus.largura * escalaBacillus;
-    const renderAlturaBacillus = configBacillus.altura * escalaBacillus;
-    const recorteXBacillus = frameBacillusAtual * configBacillus.largura;
-    ctx.save();
-    if (bac.viradoParaEsquerda) {
-      ctx.translate(bac.x + renderLarguraBacillus, bac.yAtual);
-      ctx.scale(-1, 1);
-      ctx.drawImage(imgBacillus, recorteXBacillus, 0, configBacillus.largura, configBacillus.altura,
-        0, 0, renderLarguraBacillus, renderAlturaBacillus);
-    } else {
-      ctx.drawImage(imgBacillus, recorteXBacillus, 0, configBacillus.largura, configBacillus.altura,
-        bac.x, bac.yAtual, renderLarguraBacillus, renderAlturaBacillus);
-    }
-    ctx.restore();
-  }
-
-  for (const p of particulas) {
-    ctx.globalAlpha = p.vida;
-    ctx.fillStyle = p.cor;
-    if (p.peso < 0) {
-      ctx.shadowColor = p.cor;
-      ctx.shadowBlur = 5;
-    } else {
-      ctx.shadowBlur = 0;
-    }
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.tamanho, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-  }
-  ctx.globalAlpha = 1;
-
+function desenharNematoides() {
   for (const pat of patogenos) {
-    if (!pat.ativa) continue;
-    const recorteXinimigo = frameInimigoAtual * configInimigo.largura;
+    const o = ondulacaoNematoide(pat);
+    const sx = 1 + 0.05 * (o - 0.5);
+    const sy = 1 - 0.06 * (o - 0.5);
+    const base = pat.y + pat.altura - configInimigo.rodape * escalaInimigo;
     ctx.save();
-    ctx.translate(pat.x + pat.largura, pat.y);
-    ctx.scale(-1, 1);
-    ctx.drawImage(imgInimigo, recorteXinimigo, 0, configInimigo.largura, configInimigo.altura,
-      0, 0, pat.largura, pat.altura);
+    ctx.translate(pat.x + pat.largura / 2, base - o * 3);
+    ctx.scale(pat.dir < 0 ? -sx : sx, sy);
+    ctx.drawImage(imgInimigo, frameInimigoAtual * configInimigo.largura, 0, configInimigo.largura, configInimigo.altura,
+      -pat.largura / 2, -(pat.altura - configInimigo.rodape * escalaInimigo), pat.largura, pat.altura);
     ctx.restore();
   }
+}
 
+function desenharGotas() {
   for (const gota of gotas) {
-    if (!gota.ativa) continue;
     ctx.save();
     ctx.shadowColor = '#d2b4de';
     ctx.shadowBlur = 20;
@@ -1508,41 +2115,45 @@ function desenhar() {
     ctx.stroke();
     ctx.restore();
   }
+}
 
-  // Aviso da Ralstonia: gota alaranjada que pulsa e cresce no teto.
-  for (const aviso of avisosRalstonia) {
-    const progresso = 1 - aviso.tempo / RALSTONIA.duracaoAviso;
-    const pulso = 0.5 + 0.5 * Math.sin(progresso * Math.PI * 6);
-    const raioBrilho = 34 + pulso * 16;
-    const brilho = ctx.createRadialGradient(aviso.x, aviso.y, 2, aviso.x, aviso.y, raioBrilho);
-    brilho.addColorStop(0, `rgba(255, 170, 80, ${0.55 + 0.35 * pulso})`);
-    brilho.addColorStop(1, 'rgba(224, 120, 40, 0)');
-    ctx.fillStyle = brilho;
+function desenharHalo(cx, cy) {
+  const pulso = 0.5 + 0.5 * Math.sin(passoGlobal * 0.1);
+  const raio = 92 + pulso * 8;
+  const g = ctx.createRadialGradient(cx, cy, raio * 0.55, cx, cy, raio);
+  g.addColorStop(0, 'rgba(200, 242, 90, 0)');
+  g.addColorStop(0.8, `rgba(200, 242, 90, ${0.22 + 0.12 * pulso})`);
+  g.addColorStop(1, 'rgba(94, 230, 208, 0)');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(cx, cy, raio, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(230, 255, 150, 0.9)';
+  for (let k = 0; k < 6; k++) {
+    const a = passoGlobal * 0.035 + (k * Math.PI) / 3;
     ctx.beginPath();
-    ctx.arc(aviso.x, aviso.y, raioBrilho, 0, Math.PI * 2);
+    ctx.arc(cx + Math.cos(a) * raio * 0.82, cy + Math.sin(a) * raio * 0.82, 3, 0, Math.PI * 2);
     ctx.fill();
-    const raioGota = 6 + progresso * 10;
-    ctx.fillStyle = '#e08a3c';
-    ctx.beginPath();
-    ctx.arc(aviso.x, aviso.y, raioGota, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = 'rgba(255, 230, 200, 0.7)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
   }
+}
 
-  for (const r of ralstonias) {
-    const larguraR = configRalstonia.largura * escalaRalstonia;
-    const alturaR = configRalstonia.altura * escalaRalstonia;
-    const recorteR = frameRalstoniaAtual * configRalstonia.largura;
+function desenharPulsos() {
+  for (const p of pulsos) {
+    const e = suave(p.t / p.dur);
+    const raio = p.max * e;
     ctx.save();
-    ctx.translate(r.x, r.y);
-    if (r.viradaParaEsquerda) ctx.scale(-1, 1);
-    ctx.drawImage(imgRalstonia, recorteR, 0, configRalstonia.largura, configRalstonia.altura,
-      -configRalstonia.centroX * escalaRalstonia, -configRalstonia.centroY * escalaRalstonia, larguraR, alturaR);
+    ctx.strokeStyle = `rgba(210, 248, 110, ${1 - e})`;
+    ctx.lineWidth = 16 * (1 - e) + 2;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, raio, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(94, 230, 208, ${0.18 * (1 - e)})`;
+    ctx.fill();
     ctx.restore();
   }
+}
 
+function desenharMiguelito() {
   ctx.save();
   const imagemAtual = imagemDoEstado(estado);
   const configAtual = configDoEstadoAtual();
@@ -1551,20 +2162,18 @@ function desenhar() {
   const quadro = Math.min(frameAtual, configAtual.colunas - 1);
   const recorteX = quadro * configAtual.largura;
   const yTopo = topoPersonagem(configAtual);
-  const centroX = xPersonagem + renderLargura / 2;
-  const centroY = yTopo + renderAltura / 2;
+  const centro = centroMiguelito();
+  if (temHalo) desenharHalo(centro.x, centro.y);
   if (intensidadePulsoEscudo > 0) {
     const raioPulso = 50 + (1 - intensidadePulsoEscudo) * 150;
     ctx.beginPath();
-    ctx.arc(centroX, centroY, raioPulso, 0, Math.PI * 2);
+    ctx.arc(centro.x, centro.y, raioPulso, 0, Math.PI * 2);
     ctx.strokeStyle = `rgba(155, 89, 182, ${intensidadePulsoEscudo})`;
     ctx.lineWidth = 15 * intensidadePulsoEscudo;
     ctx.stroke();
   }
   if (invulneravel && !isTomandoDano) {
     if (Math.floor(tempoInvulneravel / 5) % 2 === 0) ctx.globalAlpha = 0.4;
-  } else {
-    ctx.globalAlpha = 1;
   }
   if (miguelitoCarregadoRoxo && estado !== 'dano') {
     ctx.shadowColor = '#9b59b6';
@@ -1580,8 +2189,90 @@ function desenhar() {
       xPersonagem, yTopo, renderLargura, renderAltura);
   }
   ctx.restore();
+}
 
-  ctx.restore(); // fim do recorte da área jogável
+function desenharTextos() {
+  ctx.save();
+  ctx.font = '800 34px system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.lineWidth = 6;
+  ctx.strokeStyle = 'rgba(20, 10, 4, 0.8)';
+  for (const t of textos) {
+    ctx.globalAlpha = 1 - Math.max(0, (t.t - t.dur * 0.6) / (t.dur * 0.4));
+    ctx.strokeText(t.texto, t.x, t.y);
+    ctx.fillStyle = t.cor;
+    ctx.fillText(t.texto, t.x, t.y);
+  }
+  ctx.restore();
+}
+
+function desenharParticulas() {
+  for (const p of particulas) {
+    ctx.globalAlpha = Math.max(0, p.vida);
+    ctx.fillStyle = p.cor;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.tamanho, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function desenhar() {
+  prepararContexto();
+  ctx.clearRect(0, 0, larguraMundo, ALTURA_MUNDO);
+  const telaLarga = larguraMundo - larguraJogo >= 1;
+  if (telaLarga) desenharFundo(larguraMundo);
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(xInicioJogo, 0, larguraJogo, ALTURA_MUNDO);
+  ctx.clip();
+  ctx.translate(xInicioJogo, 0);
+  desenharFundo(larguraJogo);
+
+  desenharColonias();
+  // Ralstonia ainda ao fundo fica atrás do Bacillus.
+  for (const r of ralstonias) if (r.fase === 'surge') desenharRalstonia(r);
+
+  for (const bac of pgpbs) {
+    const w = configBacillus.largura * escalaBacillus;
+    const h = configBacillus.altura * escalaBacillus;
+    const sx = frameBacillusAtual * configBacillus.largura;
+    ctx.save();
+    if (bac.viradoParaEsquerda) {
+      ctx.translate(bac.x + w, bac.yAtual);
+      ctx.scale(-1, 1);
+      ctx.drawImage(imgBacillus, sx, 0, configBacillus.largura, configBacillus.altura, 0, 0, w, h);
+    } else {
+      ctx.drawImage(imgBacillus, sx, 0, configBacillus.largura, configBacillus.altura, bac.x, bac.yAtual, w, h);
+    }
+    ctx.restore();
+  }
+
+  // Sombras no chão: Miguelito, nematoides e Ralstonias no plano.
+  if (estadoJogo !== 'inicio') {
+    const hb = hitboxMiguelito();
+    const alturaNoAr = nivelDoChao - pesPersonagem;
+    desenharSombra(hb.x + hb.w / 2, 90 * (1 - Math.min(0.5, alturaNoAr / 400)), 0.35 * (1 - Math.min(0.6, alturaNoAr / 300)));
+  }
+  for (const pat of patogenos) desenharSombra(pat.x + pat.largura / 2, 80, 0.28);
+  for (const r of ralstonias) {
+    if (!ralstoniaNoPlano(r)) continue;
+    const proximidade = 1 - limitar((nivelDoChao - r.y) / 700, 0, 1);
+    desenharSombra(r.x, 40 + 40 * proximidade, 0.1 + 0.3 * proximidade);
+  }
+  desenharMarcasDoBote();
+
+  desenharPseudomonas();
+  desenharNematoides();
+  desenharParticulas();
+  desenharGotas();
+  for (const r of ralstonias) if (r.fase !== 'surge') desenharRalstonia(r);
+  desenharMiguelito();
+  desenharPulsos();
+  desenharTextos();
+
+  ctx.restore();
   if (telaLarga) desenharMargens();
 }
 
@@ -1617,20 +2308,22 @@ document.addEventListener('visibilitychange', () => {
 let imagensCarregadas = 0;
 function checarCarregamento() {
   imagensCarregadas++;
-  if (imagensCarregadas === 8) {
+  if (imagensCarregadas === TODAS_AS_IMAGENS.length) {
+    try {
+      fundoMurcho = criarFundoMurcho();
+      ralstoniaPalida = criarVersaoPalida(imgRalstonia);
+    } catch (erro) {
+      console.debug('Efeitos derivados indisponíveis neste navegador.', erro);
+    }
     atualizarViewport();
     zerarPartida();
     requestAnimationFrame(loopDoJogo);
   }
 }
-imgFundo.onload = checarCarregamento;
-imgAndando.onload = checarCarregamento;
-imgParado.onload = checarCarregamento;
-imgPulando.onload = checarCarregamento;
-imgInimigo.onload = checarCarregamento;
-imgDano.onload = checarCarregamento;
-imgBacillus.onload = checarCarregamento;
-imgRalstonia.onload = checarCarregamento;
+for (const img of TODAS_AS_IMAGENS) {
+  if (img.complete && img.naturalWidth) checarCarregamento();
+  else img.onload = checarCarregamento;
+}
 </script>
 </body>
 </html>
